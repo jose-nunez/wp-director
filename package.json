@@ -1,18 +1,24 @@
 {
-  "name": "vesta-duplicator",
-  "version": "1.0.0",
-  "description": "",
+  "name": "vesta-wordpress-installer",
+  "version": "0.0.1",
+  "description": "Installs and restores Wordpress sites on a Vesta managed server",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jose Nunez (Web Chemistry)",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "dependencies": {
     "child-process-promise": "^2.2.1",
-    "chown": "^0.1.2",
     "fs-extra": "^4.0.2",
+    "ftp": "^0.3.10",
     "rimraf": "^2.6.2",
+    "shell-escape": "^0.2.0",
     "userid": "^0.3.1"
-  }
+  },
+  "keywords": [
+    "wordpress",
+    "nodejs",
+    "vestacp"
+  ]
 }

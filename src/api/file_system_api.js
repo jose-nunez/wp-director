@@ -1,7 +1,7 @@
 const { SystemAPI } = require('./system_api');
+const userid = require('userid');
 const http = require('http');
 const fse = require('fs-extra');
-const chown = require('chown');
 const rimraf = require('rimraf');
 const Util = require('../modules/util');
 
@@ -12,7 +12,7 @@ class FileSystemAPI extends SystemAPI{
 	}
 
 	update_owner(dest){
-		if(this.v_user_name) chown(dest,this.v_user_name,this.v_user_name);
+		if(this.v_user_name) return fse.chown(dest,userid.uid(this.v_user_name),userid.gid(this.v_user_name));
 	}
 
 	delete_file(src){
