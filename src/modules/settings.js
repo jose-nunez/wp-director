@@ -25,6 +25,20 @@ function joinSettings(deaultSettings,newSettings){
 	return copyAttrs(deaultSettings,newSettings);
 }
 
+
+function findValue(obj,key/*in dot notation*/){
+	if(obj[key]) return obj[key];
+	else{
+		let keyA = key.split('.')[0];
+		let keyB = key.split('.')[1];
+		if(keyB && obj[keyA]) return findValue(obj[keyA],key.replace(/.*?\./,''));
+		else return null;
+	}
+}
+function translateSettings(settings){
+	
+}
+
 function getAppSettings(site_name){
 	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
 	let dbconnection = deault_settings.dbconnection;
