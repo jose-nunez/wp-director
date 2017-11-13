@@ -1,3 +1,4 @@
+const assert = require('assert');
 const MongoClient = require('mongodb').MongoClient;
 
 let database;
