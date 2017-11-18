@@ -3,23 +3,24 @@ const DB = require('./database').DB;
 const path = require('path');
 const util = require('./util');
 
-function translateSettings(settings){
+let translateSettings = exports.translateSettings = function(settings){
 	return util.translateValues(settings,settings);
 }
 
-function joinSettings(deaultSettings,newSettings){
+let joinSettings = exports.joinSettings = function(deaultSettings,newSettings){
 	return util.copyAttrs(deaultSettings,newSettings);
 }
 
-function getAppSettings(site_name){
+let getAppSettings = exports.getAppSettings = function(site_name){
 	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
-	let dbconnection = deault_settings.dbconnection;
-	delete(deault_settings.dbconnection); // Will not go to the app
-	
-	let connector = new DB(dbconnection);
-	return connector.getStageSettings(site_name).then(site_settings=>joinSettings(deault_settings,site_settings));
-
+	return deault_settings.app;
 }
 
-exports.getAppSettings = getAppSettings;
-exports.translateSettings = translateSettings;
+let getSiteSettings = exports.getSiteSettings = function(site_name){
+	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
+	let dbconnection = deault_settings.app.dbconnection;
+	
+	let connector = new DB(dbconnection);
+	return connector.getStageSettings(site_name).then(site_settings=>joinSettings(deault_settings.site,site_settings));
+
+}

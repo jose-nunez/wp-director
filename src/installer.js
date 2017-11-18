@@ -109,10 +109,10 @@ class Installer{
 	configure_duplicator_installer(){
 		let installer = this.domain_path + 'installer.php';
 		return this.fs_api.replace_in_file(installer,[
-			{find:"$GLOBALS['FW_DBNAME']			= '';",replace:`$GLOBALS['FW_DBNAME']			= '${this.db_name}';`},
-			{find:"$GLOBALS['FW_DBUSER']			= '';",replace:`$GLOBALS['FW_DBUSER']			= '${this.db_user}';`},
-			{find:"$GLOBALS['FW_DBPASS']			= '';",replace:`$GLOBALS['FW_DBPASS']			= '${this.cfg.db_pass}';`},
-			{find:"$GLOBALS['CURRENT_ROOT_PATH']   = dirname(__FILE__);",replace:`$GLOBALS['CURRENT_ROOT_PATH']   = "${this.domain_path}";`},
+			{find:/\$GLOBALS\[\'FW_DBNAME\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBNAME'] = '${this.db_name}';`},
+			{find:/\$GLOBALS\[\'FW_DBUSER\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBUSER'] = '${this.db_user}';`},
+			{find:/\$GLOBALS\[\'FW_DBPASS\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBPASS'] = '${this.cfg.db_pass}';`},
+			{find:/\$GLOBALS\[\'CURRENT_ROOT_PATH\'\]\s*?=\s*?dirname\(__FILE__\);/,replace:`$GLOBALS['CURRENT_ROOT_PATH'] = "${this.domain_path}";`},
 			{find:'<input id="accept-warnings" name="accpet-warnings"',replace:'<input id="accept-warnings" name="accpet-warnings" checked="checked"'},
 		]).then(()=>server_log('Duplicator Installer configured'))
 	}
@@ -216,7 +216,7 @@ class Installer{
 	download_files(method='get',backup_full_names){
 		let downloader = method=='ftp'? this.ftp_api : this.fs_api;
 		return this.fileproc(backup_full_names,({filename,remote_backup_filename,local_backup_filename})=>{
-			server_log('Downloading '+filename);
+			server_log('Downloading '+remote_backup_filename);
 			return downloader.download_file(remote_backup_filename,local_backup_filename,true).then(result=>server_log('Downloaded '+filename));
 		}).then(()=>server_log('All backup files downloaded'));
 	}
@@ -225,7 +225,7 @@ class Installer{
 		return this.fileproc(backup_full_names,({filename,local_backup_filename,installation_filename})=>{
 			server_log('Copying '+filename);
 			return this.ftp_api.copy_file(local_backup_filename,installation_filename)
-				.then(result=>server_log('Copied '+filenames[0]))
+				.then(result=>server_log('Copied '+filename))
 		}).then(()=>server_log('All backup files transfered'));
 	}
 
@@ -296,10 +296,10 @@ class Installer{
 		});
 	}
 
-	install_backup_files(mode){
+	install_backup_files(mode,backup_full_names){
 		if(mode==='duplicator'){
 			return 	this.transfer_files(backup_full_names)
-			.then(	this.configure_duplicator_installer);
+			.then(	()=>this.configure_duplicator_installer() );
 		}
 		else if(mode==='migratedb'){
 			return 		this.unzip_migratedb_files(false)
@@ -311,8 +311,9 @@ class Installer{
 	full_site_backup_restore({mode,delete_user,restart_domain,download_method}){	
 		return this.full_site_init(delete_user,restart_domain)
 			.then(()=>this.get_backup_full_names(mode,download_method,false))
-			.then(backup_full_names=>this.get_backup_files(download_method,backup_full_names))
-			.then(()=>this.install_backup_files(mode))
+			.then(backup_full_names=>
+				this.get_backup_files(download_method,backup_full_names).then(()=>this.install_backup_files(mode,backup_full_names))
+			)
 			.catch(e=>server_log('Failed full_site_init',e));
 	}
 }
