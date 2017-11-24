@@ -18,9 +18,7 @@ let getAppSettings = exports.getAppSettings = function(site_name){
 
 let getSiteSettings = exports.getSiteSettings = function(site_name){
 	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
-	let dbconnection = deault_settings.app.dbconnection;
-	
-	let connector = new DB(dbconnection);
-	return connector.getStageSettings(site_name).then(site_settings=>joinSettings(deault_settings.site,site_settings));
-
+	let dbconnection = deault_settings.app.dbconnection;	
+	let db = new DB(dbconnection);
+	return db.getStageSettings(site_name).then(site_settings=>joinSettings(deault_settings.site,site_settings)).then(site_settings=>translateSettings(site_settings));
 }
