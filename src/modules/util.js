@@ -68,7 +68,8 @@ function translateValue(value,source){
 	return r;
 }
 function translateValues(value,source){
-	if(value instanceof Array) return value.map(val=>translateValues(val,source));
+	if(!value) return value;
+	else if(value instanceof Array) return value.map(val=>translateValues(val,source));
 	else if(typeof value === "object"){ 
 		let r = {};
 		Object.keys(value).map(key=>{

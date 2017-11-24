@@ -32,5 +32,8 @@ function runInstaller(cfg){
 
 }
 
-settings.getSiteSettings('airconditioningsales').then(settings=>runInstaller(settings));
+
+let sessionSettings = settings.getSessionSettings();
+
+settings.getSiteSettings(sessionSettings).then(settings=>runInstaller(settings));
 

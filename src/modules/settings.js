@@ -16,9 +16,15 @@ let getAppSettings = exports.getAppSettings = function(site_name){
 	return deault_settings.app;
 }
 
-let getSiteSettings = exports.getSiteSettings = function(site_name){
+let getSiteSettings = exports.getSiteSettings = function(session_settings){
 	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
 	let dbconnection = deault_settings.app.dbconnection;	
 	let db = new DB(dbconnection);
-	return db.getStageSettings(site_name).then(site_settings=>joinSettings(deault_settings.site,site_settings)).then(site_settings=>translateSettings(site_settings));
+	return db.getStageSettings(session_settings.site_name)
+		.then(site_settings=>joinSettings(joinSettings(deault_settings.site,site_settings),session_settings))
+		.then(site_settings=>translateSettings(site_settings));
+}
+
+let getSessionSettings = exports.getSessionSettings = function(){
+	return YAML.load(path.join(__dirname,'../session.yml'));
 }
