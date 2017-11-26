@@ -3,26 +3,29 @@ const DB = require('./database').DB;
 const path = require('path');
 const util = require('./util');
 
-let translateSettings = exports.translateSettings = function(settings){
-	return util.translateValues(settings,settings);
+let translateSettings = exports.translateSettings = function(settings,source){
+	return util.translateValues(settings,source||settings);
 }
 
 let joinSettings = exports.joinSettings = function(deaultSettings,newSettings){
 	return util.copyAttrs(deaultSettings,newSettings);
 }
 
-let getAppSettings = exports.getAppSettings = function(site_name){
-	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
-	return deault_settings.app;
+let getDefaultSettings = exports.getDefaultSettings = function(site_name){
+	return YAML.load(path.join(__dirname,'../config.yml'));
 }
 
-let getSiteSettings = exports.getSiteSettings = function(session_settings){
-	let deault_settings = YAML.load(path.join(__dirname,'../config.yml'));
-	let dbconnection = deault_settings.app.dbconnection;	
+let getAppSettings = exports.getAppSettings = function(site_name){
+	return getDefaultSettings().app;
+}
+
+let getSiteSettings = exports.getSiteSettings = function(site_name){
+	let default_settings = getDefaultSettings();
+	let dbconnection = default_settings.app.dbconnection;	
 	let db = new DB(dbconnection);
-	return db.getStageSettings(session_settings.site_name)
-		.then(site_settings=>joinSettings(joinSettings(deault_settings.site,site_settings),session_settings))
-		.then(site_settings=>translateSettings(site_settings));
+	return db.getStageSettings(site_name)
+		.then(site_settings=>joinSettings(default_settings.site,site_settings))
+		// .then(site_settings=>translateSettings(site_settings));
 }
 
 let getSessionSettings = exports.getSessionSettings = function(){

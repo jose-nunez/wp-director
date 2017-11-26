@@ -1,5 +1,5 @@
 
-function replaceAll(text, busca, reemplaza ){
+let replaceAll = exports.replaceAll = function(text, busca, reemplaza ){
 	var recall = false;
 	var clave_aux= 'CLAVEUNICAMOMENTANEADELMOMENTOMOMENTUAL';
 	//Evita loop infinito
@@ -17,18 +17,18 @@ function replaceAll(text, busca, reemplaza ){
 	else return text;
 }
 
-function printDate(){
+let printDate = exports.printDate = function(){
 	return new Date().toISOString().replace(/T/,'|').replace(/\..*/,'');
 }
 
-function server_log(...args){
+let server_log = exports.server_log = function(...args){
 	process.stdout.write(printDate()+' ');
 	console.log.apply(null,args);
 }
 
 
 //TODO: join arrays
-function copyAttrs(prev,next){
+let copyAttrs  =exports.copyAttrs = function(prev,next){
 	if(!next) return prev;
 	else if(typeof next !== "object" || typeof prev !== "object") return next;
 	else{
@@ -45,9 +45,9 @@ function copyAttrs(prev,next){
 	}
 }
 
-function findValue(obj,key/*in dot notation*/){
+let findValue = exports.findValue = function(obj,key/*in dot notation*/){
 	if(!key) return;
-	else if(obj[key]) return obj[key];
+	else if(obj[key]) return ''+obj[key]; //Convert to string!
 	else{
 		let parent_key = key.replace(/\..*/,'');
 		let sub_keys = key.replace(/.*?\./,'');
@@ -55,34 +55,42 @@ function findValue(obj,key/*in dot notation*/){
 		else return null;
 	}
 }
-function translateValue(value,source){
-	if(!value) return;
-	let r = value;
+
+let translateValue = exports.translateValue = function(oldValue,source,nullify){
+	if(!oldValue) return;
+	let r = oldValue;
 	let token = /\$\{.*?\}/g;
-	let templates = value.match(token);
+	let templates = oldValue.match(token);
 	if(templates){
 		templates.map(template=>{
-			r = r.replace(template,findValue(source,template.replace(/[\$\{\}]/g,'')));
+			let newValue = findValue(source,template.replace(/[\$\{\}]/g,''));
+			if(newValue===null && nullify) newValue = '';
+			else if(newValue===null && !nullify) newValue = template;
+			else newValue = translateValue(newValue,source,nullify); //CHAIN TRANSLATE 
+			r = r.replace(template,newValue);
 		});
 	}
 	return r;
 }
-function translateValues(value,source){
+let translateValues = exports.translateValues = function(value,source,nullify){
 	if(!value) return value;
-	else if(value instanceof Array) return value.map(val=>translateValues(val,source));
+	else if(value instanceof Array) return value.map(val=>translateValues(val,source,nullify));
 	else if(typeof value === "object"){ 
 		let r = {};
 		Object.keys(value).map(key=>{
-			r[key] = translateValues(value[key],source);
+			r[key] = translateValues(value[key],source,nullify);
 		});
 		return r;
 	}
-	else if(typeof value === "string") return translateValue(value,source);
+	else if(typeof value === "string") return translateValue(value,source,nullify);
 	else return value;
 }
 
-exports.replaceAll = replaceAll;
-exports.printDate = printDate;
-exports.server_log = server_log;
-exports.copyAttrs = copyAttrs;
-exports.translateValues = translateValues;
+
+let duplicateObj = exports.duplicateObj = function (obj){
+	return JSON.parse(JSON.stringify(obj));
+}
+
+let urlOrigin = exports.urlOrigin = function(url){
+	return new url.URL(url).origin;
+}

@@ -33,11 +33,6 @@ class VestaAPI extends SystemAPI{
 	remove_domain(v_user_name,domain_name){ 
 		return this.sys_call('v-delete-domain',v_user_name,domain_name);
 	}
-
-	getDefaultRobotsFileName(){
-		return '/usr/local/vesta/data/templates/web/skel/public_html/robots.txt';
-	}
-
 }
 
 exports.VestaAPI = VestaAPI;

@@ -5,7 +5,55 @@ const { WP_API } = require('./api/wp_api');
 const { FileSystemAPI } = require('./api/file_system_api');
 const { FTP_API } = require('./api/ftp_api');
 const { DataBaseAPI } = require('./api/data_base_api');
-const { server_log } = require('./modules/util.js');
+const { server_log , urlOrigin} = require('./modules/util.js');
+
+
+/*
+{
+    vesta: {
+        user_email: 'dev@webchemistry.com.au',
+        user_name: 'aircon',
+        user_password: 'algunawea'
+    },
+    restore_mode: 'manual',
+    download_method: 'get',
+    local: {
+        path: '/home/aircon/web/aircon.webchemistry.studio/public_html',
+        backup_dir: '/home/admin/storage/backups/aircon/',
+        database: {
+            name_sufix: 'db2',
+            user_sufix: 'us2',
+            user: 'aircon_us2',
+            name: 'aircon_db2',
+            password: 'algunawea'
+        },
+        domain: 'aircon-2.webchemistry.studio'
+    },
+    remote: {
+        backup_database: 'db.sql.gz',
+        backup_files: 'public_html.zip',
+        ftp: { host: 'host.webchemistry.com.au', user: 'wwwairco' },
+        domain: 'www.airconditioningsales.com.au',
+        path: '/home/wwwairco/public_html'
+    },
+    name: 'airconditioningsales',
+    pretty_name: 'Airconditioning Sales',
+    robots_template: undefined,
+    wordpress: {
+        title: 'My super wordpress sitio',
+        admin: 'dev',
+        password: 'algunawea',
+        email: 'dev@webchemistry.com.au',
+        skip_email: true,
+        themes: [
+            [Array],
+            [Array]
+        ]
+    }
+}
+*/
+
+
 
 class Installer{
 
@@ -46,73 +94,134 @@ class Installer{
 	* VESTA ADMIN 
 	******************************************/
 
-	delete_user(){
-		/*if(this.cfg.delete_user) return this.vesta_api.delete_user(this.cfg.v_user_name).then((result)=>server_log('Deleted vesta user'));
-		else return new Promise((resolve, reject)=>resolve("Te salvaste ql!"));  */
-		return this.vesta_api.delete_user(this.cfg.v_user_name).then((result)=>server_log('Deleted vesta user'));
+	delete_user(cfg){
+		server_log(`Deleting user ${cfg.vesta.user_name}`);
+		return this.vesta_api.delete_user(cfg.vesta.user_name)
+			.then((result)=>server_log('Deleted user'));
 	}
 
-	create_user(){ return this.vesta_api.create_user(this.cfg.v_user_name,this.cfg.v_user_password,this.cfg.v_user_email).then((result)=>server_log('Created vesta user')); }
+	create_user(cfg){ 
+		server_log(`Creating user ${cfg.vesta.user_name}`);
+		return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
+		.then((result)=>server_log('Created user')); 
+	}
 
-	create_domain(){ 
-		return 		this.vesta_api.create_domain(this.cfg.v_user_name,this.cfg.domain_name).then((result)=>server_log('Created domain'))
-		.then(()=>	this.vesta_api.add_letsencrypt(this.cfg.v_user_name,this.cfg.domain_name).then((result)=>server_log('Added Lets Encrypt'))).catch(e=>server_log(e.stdout));
+	create_domain(cfg){ 
+		server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+		return 		this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Created domain'))
+		.then(()=>	this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Added domain SSL'))).catch(e=>server_log(e.stdout));
 
 	}
 
-	clean_domain_dir(){
-		let robots_src  = this.vesta_api.getDefaultRobotsFileName();
-		let robots_dst  = this.domain_path + path.basename(robots_src);
-		
-		return 		this.fs_api.delete_folder(this.domain_path,true)
+	clean_domain_dir(cfg){
+		server_log(`Cleaning domain folder ${cfg.local.path}`);
+		let robots_src  = cfg.robots_template;
+		let robots_dst  = path.join(cfg.local.path,path.basename(robots_src));
+		return 		this.fs_api.delete_folder(cfg.local.path,true)
+		.then(()=>	this.fs_api.create_dir(cfg.local.path))
 		.then(()=>	this.fs_api.copy_file(robots_src,robots_dst))
-		.then(()=>	this.fs_api.create_dir(this.domain_path)).then(()=>server_log('Domain folder cleaned'));
+		.then(()=>server_log('Domain folder cleaned'));
 	}
 
-	remove_domain(){ return this.vesta_api.remove_domain(this.cfg.v_user_name,this.cfg.domain_name).then((result)=>server_log('Removed domain')); }
+	remove_domain(cfg){ 
+		server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+		return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
+		.then((result)=>server_log('Removed domain')); 
+	}
 
-	remove_database(){ return this.vesta_api.remove_database(this.cfg.v_user_name,this.db_name).then((result)=>server_log('Removed database')); }
+	remove_database(cfg){ 
+		server_log(`Removing database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
+		return this.vesta_api.remove_database(cfg.vesta.user_name,cfg.local.database.name).then((result)=>server_log('Removed database')); 
+	}
 
-	create_database(){ return this.vesta_api.create_database(this.cfg.v_user_name,this.cfg.db_name_sufix,this.cfg.db_user_sufix,this.cfg.db_pass).then((result)=>server_log('Created database')); }
+	create_database(cfg){ 
+		server_log(`Creating database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
+		return this.vesta_api.create_database(cfg.vesta.user_name,cfg.local.database.name_sufix,cfg.local.database.user_sufix,cfg.local.database.password)
+		.then((result)=>server_log('Created database')); 
+	}
 
 	/******************************************
 	* WORDPRESS INSTALL 
 	******************************************/
 
-	download_wp(){ return this.wp_api.download().then((result)=>server_log(result.stdout)); }
-
-	config_wp(){ return this.wp_api.config(this.db_name,this.db_user,this.cfg.db_pass).then((result)=>server_log(result.stdout)); }
-	
-	// https://regex101.com/r/pitmX3/1
-	config_wp_manually(){
-		let wpconfig = this.domain_path + 'wp-config.php';
-		return this.fs_api.replace_in_file(wpconfig,[
-			{find:/define\s*?\(\s*?('|")DB_NAME('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_NAME','${this.db_name}');`},
-			{find:/define\s*?\(\s*?('|")DB_USER('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_USER','${this.db_user}');`},
-			{find:/define\s*?\(\s*?('|")DB_PASSWORD('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_PASSWORD','${this.cfg.db_pass}');`},
-		]).then(()=>server_log('File wp-config succesfully'));
+	download_wp(){ 
+		server_log(`Downloading Wordpress`);
+		return this.wp_api.download()
+		.then((result)=>server_log(result.stdout));
 	}
 
-	install_wp(){ return this.wp_api.install(this.cfg.domain_name,this.cfg.title,this.cfg.admin_user,this.cfg.admin_password,this.cfg.admin_email,this.cfg.skip_email).then((result)=>server_log(result.stdout)); }
+	config_wp(cfg){ 
+		server_log(`Auto generate wp-config.php`);
+		return this.wp_api.config(cfg.local.database.name,cfg.local.database.user,cfg.local.database.password)
+		.then((result)=>server_log(result.stdout)); 
+	}
+	
+	// https://regex101.com/r/pitmX3/1
+	config_wp_manually(cfg){
+		server_log(`Manual generate wp-config.php`);
+		let wpconfig = this.domain_path + 'wp-config.php';
+		return this.fs_api.replace_in_file(wpconfig,[
+			{find:/define\s*?\(\s*?('|")DB_NAME('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_NAME','${cfg.local.database.name}');`},
+			{find:/define\s*?\(\s*?('|")DB_USER('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_USER','${cfg.local.database.user}');`},
+			{find:/define\s*?\(\s*?('|")DB_PASSWORD('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_PASSWORD','${cfg.local.database.password}');`},
+		]).then(()=>server_log('wp-config.php generated succesfully'));
+	}
 
-	install_wp_themes(){ this.cfg.install_themes.forEach(theme=>(this.wp_api.install_theme(theme[0],theme[1]).then(result=>server_log(result.stdout)))); }
+	install_wp(cfg){ 
+		server_log(`Installing Wordpress: ${cfg.wordpress.title}`);
+		return this.wp_api.install(
+			cfg.local.domain,
+			cfg.wordpress.title,
+			cfg.wordpress.admin,
+			cfg.wordpress.password,
+			cfg.wordpress.email,
+			cfg.wordpress.skip_email
+		)
+		.then((result)=>server_log(result.stdout)); 
+	}
 
-	install_wp_plugins(){ this.cfg.install_plugins.forEach(plugin=>(this.wp_api.install_plugin(plugin[0],plugin[1]).then(result=>server_log(result.stdout)))); }
+	install_wp_themes(cfg){ 
+		server_log(`Installing Themes`);
+		cfg.themes.forEach(theme=>(
+			this.wp_api.install_theme(theme[0],theme[1])
+				.then(result=>server_log(result.stdout))
+		)); 
+	}
 
-	migratedb_replace_domain(){ return this.wp_api.migratedb_find_replace(this.cfg.original_domain,this.cfg.domain_name).then(()=>server_log('Replaced domain name in database')); }
-	migratedb_replace_path(){ return this.wp_api.migratedb_find_replace(this.cfg.original_path,this.domain_path_nts).then(()=>server_log('Replaced path name in database')); }
+	install_wp_plugins(cfg){ 
+		server_log(`Installing Plugins`);
+		cfg.plugins.forEach(plugin=>(
+			this.wp_api.install_plugin(plugin[0],plugin[1])
+				.then(result=>server_log(result.stdout))
+		));
+	}
+
+	migratedb_replace_domain(cfg){ 
+		server_log('Replacing domain name in database');
+		return this.wp_api.migratedb_find_replace(urlOrigin(cfg.remote.domain),urlOrigin(cfg.local.domain))
+			.then(()=>server_log('Replaced domain name in database')); 
+	}
+	migratedb_replace_path(cfg){ 
+		server_log('Replacing path name in database');
+		let trailingslash = new RegExp(path.sep+'+$');
+		return this.wp_api.migratedb_find_replace(
+				cfg.remote.path.replace(trailingslash,''),
+				cfg.local.path.replace(trailingslash,'')
+			)
+			.then(()=>server_log('Replaced path name in database')); 
+	}
 			
 	
 	/******************************************
 	* RESTORE DUPLICATOR BACKUP
 	******************************************/
-	configure_duplicator_installer(){
-		let installer = this.domain_path + 'installer.php';
+	configure_duplicator_installer(cfg){
+		let installer = path.join(cfg.local.path,'installer.php');
 		return this.fs_api.replace_in_file(installer,[
-			{find:/\$GLOBALS\[\'FW_DBNAME\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBNAME'] = '${this.db_name}';`},
-			{find:/\$GLOBALS\[\'FW_DBUSER\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBUSER'] = '${this.db_user}';`},
-			{find:/\$GLOBALS\[\'FW_DBPASS\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBPASS'] = '${this.cfg.db_pass}';`},
-			{find:/\$GLOBALS\[\'CURRENT_ROOT_PATH\'\]\s*?=\s*?dirname\(__FILE__\);/,replace:`$GLOBALS['CURRENT_ROOT_PATH'] = "${this.domain_path}";`},
+			{find:/\$GLOBALS\[\'FW_DBNAME\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBNAME'] = '${cfg.local.database.name}';`},
+			{find:/\$GLOBALS\[\'FW_DBUSER\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBUSER'] = '${cfg.local.database.user}';`},
+			{find:/\$GLOBALS\[\'FW_DBPASS\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBPASS'] = '${cfg.local.database.password}';`},
+			{find:/\$GLOBALS\[\'CURRENT_ROOT_PATH\'\]\s*?=\s*?dirname\(__FILE__\);/,replace:`$GLOBALS['CURRENT_ROOT_PATH'] = "${cfg.local.path}";`},
 			{find:'<input id="accept-warnings" name="accpet-warnings"',replace:'<input id="accept-warnings" name="accpet-warnings" checked="checked"'},
 		]).then(()=>server_log('Duplicator Installer configured'))
 	}

@@ -1,5 +1,5 @@
 const { Installer } = require('./installer.js');
-const { server_log } = require('./modules/util.js');
+const { server_log,duplicateObj } = require('./modules/util.js');
 const settings = require('./modules/settings');
 
 function runInstaller(cfg){
@@ -32,8 +32,31 @@ function runInstaller(cfg){
 
 }
 
+function processSettings(sessionSettings,siteSettings,appSettings){
+	newSettings = settings.translateSettings(settings.translateSettings(siteSettings,sessionSettings));
+	delete(newSettings.local.subdomain);
+	
+	newSettings.local.database.password = 'algunawea';
+	newSettings.vesta.user_password = 'algunawea';
+	newSettings.robots_template = appSettings.robots_template;
+	// TEMPORARY
+	newSettings.wordpress = settings.translateSettings(sessionSettings.wordpress,appSettings);
+	newSettings.remote.duplicator_files_prefix = sessionSettings.duplicator_files_prefix;
+	return newSettings;
 
-let sessionSettings = settings.getSessionSettings();
+}
 
-settings.getSiteSettings(sessionSettings).then(settings=>runInstaller(settings));
 
+function run(){
+	let sessionSettings = settings.getSessionSettings();
+	let appSettings = settings.getAppSettings();
+
+	return settings.getSiteSettings(sessionSettings.site_name).then(siteSettings=>{
+
+		let newSet = processSettings(sessionSettings,siteSettings,appSettings)
+
+		return runInstaller(newSet);
+	});
+}
+
+run();
