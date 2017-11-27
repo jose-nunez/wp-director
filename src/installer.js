@@ -5,7 +5,7 @@ const { WP_API } = require('./api/wp_api');
 const { FileSystemAPI } = require('./api/file_system_api');
 const { FTP_API } = require('./api/ftp_api');
 const { DataBaseAPI } = require('./api/data_base_api');
-const { server_log , urlOrigin} = require('./modules/util.js');
+const { server_log , urlOrigin , lsTrim , rsTrim} = require('./modules/util.js');
 
 
 /*
@@ -203,10 +203,9 @@ class Installer{
 	}
 	migratedb_replace_path(cfg){ 
 		server_log('Replacing path name in database');
-		let trailingslash = new RegExp(path.sep+'+$');
 		return this.wp_api.migratedb_find_replace(
-				cfg.remote.path.replace(trailingslash,''),
-				cfg.local.path.replace(trailingslash,'')
+				rPTrim(cfg.remote.path),
+				rPTrim(cfg.local.path)
 			)
 			.then(()=>server_log('Replaced path name in database')); 
 	}
@@ -226,30 +225,35 @@ class Installer{
 		]).then(()=>server_log('Duplicator Installer configured'))
 	}
 	
-	get_duplicator_names(){
+	get_duplicator_names(cfg){
 		return Promise.resolve([
-			this.cfg.duplicator_backup_name + '_archive.zip',
-			this.cfg.duplicator_backup_name + '_database.sql',
-			this.cfg.duplicator_backup_name + '_installer.php',
+			cfg.remote.duplicator_files_prefix + '_archive.zip',
+			cfg.remote.duplicator_files_prefix + '_database.sql',
+			cfg.remote.duplicator_files_prefix + '_installer.php',
 		]);
 	}
-	get_duplicator_installer_name(){ return this.cfg.duplicator_backup_name + '_installer.php';	}
-	is_duplicator_installer_file(mode,filename){ return mode==='duplicator' && filename === this.get_duplicator_installer_name();}
+	get_duplicator_installer_name(cfg){ 
+		return cfg.remote.duplicator_files_prefix + '_installer.php';	
+	}
+
+	is_duplicator_installer_file(mode,filename){ 
+		return mode==='duplicator' && filename === this.get_duplicator_installer_name();
+	}
 
 
 	/******************************************
 	* RESTORE WP MIGRATE DB BACKUP
 	******************************************/
-	get_migratedb_names(){
+	get_migratedb_names(cfg){
 		return Promise.resolve([
-			this.cfg.manual_backup_db,
-			this.cfg.manual_backup_files,
+			cfg.remote.backup_database,
+			cfg.remote.backup_files,
 		]);
 	}
 
-	find_files_all_names(list,no_skip_main){
+	find_files_all_names(cfg,list,no_skip_main){
 		let result = [];
-		let mainfile = this.cfg.manual_backup_files;
+		let mainfile = cfg.remote.backup_files;
 		let find = new RegExp(mainfile.replace(/\.zip/,'')+'\\.z');
 		list.map(elem=>{
 			if((no_skip_main || elem.name!==mainfile) && elem.name.match(find)!==null) result.push(elem.name);
@@ -257,24 +261,24 @@ class Installer{
 		return result;
 	}
 
-	get_migratedb_remote_files_all_names(){
-		return this.ftp_api.scan_folder(this.cfg.remote_backup_dir).then(list=>this.find_files_all_names(list));
+	get_migratedb_remote_files_all_names(cfg){
+		return this.ftp_api.scan_folder(path.dirname(cfg.remote.backup_files)).then(list=>this.find_files_all_names(cfg,list));
 	}
-	/*get_migratedb_local_files_all_names(){
-		return this.fs_api.scan_folder(this.local_backup_dir).then(list=>this.find_files_all_names(list,true));
-	}*/
 
 	unzip_migratedb_files(multipart_support){
-		/*return this.get_migratedb_local_files_all_names().then(sources=>{
-			return this.fs_api.decompress(sources.map(filename=>(this.local_backup_dir+filename)),this.pre_domain_path,multipart_support).then('Uzipped files');
-		});*/
-		server_log(`Extracting ${this.cfg.manual_backup_files}`);
-		return this.fs_api.decompress(this.local_backup_dir+this.cfg.manual_backup_files,this.pre_domain_path,multipart_support).then(server_log(`Extracted ${this.cfg.manual_backup_files}`));
+		server_log(`Extracting ${cfg.remote.backup_files}`);
+		return this.fs_api.decompress(
+				path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_files)),
+				path.dirname(cfg.local.path),
+				multipart_support
+		)
+		.then(server_log(`Extracted ${cfg.remote.backup_files}`));
 	}
 
-	install_migratedb_database(){
-		server_log('Running script '+this.cfg.manual_backup_db);
-		return 		this.database_api.run_script(this.local_backup_dir+this.cfg.manual_backup_db).then(()=>server_log('Script executed'))
+	install_migratedb_database(cfg){
+		server_log('Running script '+cfg.remote.backup_database);
+		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
+		.then(()=>	server_log('Script executed'))
 		.then(()=>	this.migratedb_replace_domain())
 		.then(()=>	this.migratedb_replace_path())
 		;
@@ -283,7 +287,7 @@ class Installer{
 	/******************************************
 	* GENERAL RESTORE BACKUP FUNCTIONS
 	******************************************/
-	get_backup_full_names(mode,method,look_for_parts){
+	get_backup_full_names(cfg,{mode,method,look_for_parts}){
 		let the_promise;
 		let extras = [];
 		switch(mode){
@@ -300,12 +304,16 @@ class Installer{
 			default:break;
 		}
 
-		return the_promise.then(names=>names.map(filename=>({
-			filename:				filename,
-			remote_backup_filename:	(method=='get'?this.cfg.original_domain:'') + this.cfg.remote_backup_dir + filename,
-			local_backup_filename:	this.local_backup_dir+filename, 	
-			installation_filename:	this.domain_path + (this.is_duplicator_installer_file(mode,filename)?'installer.php':filename),
-		})));
+		return the_promise.then(names=>names.map(filename=>{
+			let the_filename = path.basename(filename);
+			let the_download = method=='get'? rWTrim(cfg.remote.domain)+'/'+lWTrim(filename) : filename;
+			return {
+				filename:				the_filename,
+				remote_backup_filename:	the_download,
+				local_backup_filename:	path.join(cfg.local.backup_dir,the_filename),
+				installation_filename:	path.join(cfg.local.path , (this.is_duplicator_installer_file(mode,the_filename)?'installer.php':the_filename) ),
+			};
+		}));
 	}
 
 	fileproc(backup_full_names,fn){
@@ -313,12 +321,12 @@ class Installer{
 	}
 
 	delete_local_files(backup_full_names){
-		return this.fileproc(backup_full_names,({local_backup_filename})=>this.fs_api.delete_file(local_backup_filename))
+		return this.fileproc(backup_full_names, ({local_backup_filename}) => this.fs_api.delete_file(local_backup_filename) )
 			.then(()=>server_log('All backup files deleted'));
 	}
 
 	find_local_files(backup_full_names){
-		return this.fileproc(backup_full_names,({local_backup_filename})=>this.fs_api.read_file(local_backup_filename))
+		return this.fileproc(backup_full_names, ({local_backup_filename}) => this.fs_api.read_file(local_backup_filename) )
 			.then(()=>server_log('All backup files found in storage'));
 	}
 
@@ -342,8 +350,8 @@ class Installer{
 	* PRESET ROUTINES 
 	******************************************/
 
-	create_user_backup_folder(){
-		return this.fs_api.create_dir(this.local_backup_dir);
+	create_user_backup_folder(cfg){
+		return this.fs_api.create_dir(cfg.local.backup_dir);
 	}
 
 	restart_user(){
@@ -393,11 +401,11 @@ class Installer{
 
 	get_backup_files(download_method,backup_full_names){
 		return this.find_local_files(backup_full_names).then(()=>{
-			if(this.cfg.force_download_backups){
+			/*if(this.cfg.force_download_backups){
 				server_log('Forcing download');
 				return 			this.delete_local_files(backup_full_names).catch(e=>{})
 					.then(()=>	this.download_files(download_method,backup_full_names));
-			}
+			}*/
 		})
 		.catch(e=>{
 			server_log('Downloading backups');

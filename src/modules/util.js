@@ -66,7 +66,7 @@ let translateValue = exports.translateValue = function(oldValue,source,nullify){
 			let newValue = findValue(source,template.replace(/[\$\{\}]/g,''));
 			if(newValue===null && nullify) newValue = '';
 			else if(newValue===null && !nullify) newValue = template;
-			else newValue = translateValue(newValue,source,nullify); //CHAIN TRANSLATE 
+			else newValue = translateValue(newValue,source,nullify); //CHAIN TRANSLATE | How to avoid circular reference?
 			r = r.replace(template,newValue);
 		});
 	}
@@ -93,4 +93,25 @@ let duplicateObj = exports.duplicateObj = function (obj){
 
 let urlOrigin = exports.urlOrigin = function(url){
 	return new url.URL(url).origin;
+}
+
+// left path trim
+let lPTrim = exports.lPTrim = function(str){
+	let leadingslash = new RegExp('^'+path.sep+'+');	
+	return str.replace(leadingslash,'');
+}
+// left url trim
+let lWTrim = exports.lWTrim = function(str){
+	let leadingslash = new RegExp('^/+');
+	return str.replace(leadingslash,'');
+}
+// right path trim
+let rPTrim = exports.rPTrim = function(str){
+	let trailingslash = new RegExp(path.sep+'+$');
+	return str.replace(trailingslash,'');
+}
+// right url trim
+let rWTrim = exports.rWTrim = function(str){
+	let trailingslash = new RegExp('/+$');
+	return str.replace(trailingslash,'');
 }
