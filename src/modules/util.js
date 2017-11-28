@@ -1,3 +1,15 @@
+let server_log = exports.server_log = function(...args){
+	process.stdout.write(printDate()+' ');
+	console.log.apply(null,args);
+}
+
+let server_error = exports.server_error = function(e){
+	process.stdout.write(printDate()+' ');
+	if(!e) console.error('Unknown Error');
+	console.log.apply(null,[`${e.name||''} ${e.message||''} ${e.stdout||''}`]);
+}
+
+
 
 let replaceAll = exports.replaceAll = function(text, busca, reemplaza ){
 	var recall = false;
@@ -20,12 +32,6 @@ let replaceAll = exports.replaceAll = function(text, busca, reemplaza ){
 let printDate = exports.printDate = function(){
 	return new Date().toISOString().replace(/T/,'|').replace(/\..*/,'');
 }
-
-let server_log = exports.server_log = function(...args){
-	process.stdout.write(printDate()+' ');
-	console.log.apply(null,args);
-}
-
 
 //TODO: join arrays
 let copyAttrs  =exports.copyAttrs = function(prev,next){

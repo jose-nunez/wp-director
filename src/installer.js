@@ -1,58 +1,11 @@
-const path = require('path');
 
+const path = require('path');
 const { VestaAPI } = require('./api/vesta_api');
 const { WP_API } = require('./api/wp_api');
 const { FileSystemAPI } = require('./api/file_system_api');
 const { FTP_API } = require('./api/ftp_api');
 const { DataBaseAPI } = require('./api/data_base_api');
 const { server_log , urlOrigin , lsTrim , rsTrim} = require('./modules/util.js');
-
-
-/*
-{
-    vesta: {
-        user_email: 'dev@webchemistry.com.au',
-        user_name: 'aircon',
-        user_password: 'algunawea'
-    },
-    restore_mode: 'manual',
-    download_method: 'get',
-    local: {
-        path: '/home/aircon/web/aircon.webchemistry.studio/public_html',
-        backup_dir: '/home/admin/storage/backups/aircon/',
-        database: {
-            name_sufix: 'db2',
-            user_sufix: 'us2',
-            user: 'aircon_us2',
-            name: 'aircon_db2',
-            password: 'algunawea'
-        },
-        domain: 'aircon-2.webchemistry.studio'
-    },
-    remote: {
-        backup_database: 'db.sql.gz',
-        backup_files: 'public_html.zip',
-        ftp: { host: 'host.webchemistry.com.au', user: 'wwwairco' },
-        domain: 'www.airconditioningsales.com.au',
-        path: '/home/wwwairco/public_html'
-    },
-    name: 'airconditioningsales',
-    pretty_name: 'Airconditioning Sales',
-    robots_template: undefined,
-    wordpress: {
-        title: 'My super wordpress sitio',
-        admin: 'dev',
-        password: 'algunawea',
-        email: 'dev@webchemistry.com.au',
-        skip_email: true,
-        themes: [
-            [Array],
-            [Array]
-        ]
-    }
-}
-*/
-
 
 
 class Installer{
@@ -72,7 +25,7 @@ class Installer{
 	******************************************/
 	init_vesta_api(){ this.vesta_api = new VestaAPI(/*DON'T CHANGE USER*/);	}
 	init_wp_api(cfg){ this.wp_api = new WP_API(cfg.vesta.user_name,cfg.local.path); } // Init after created Vesta User!
-	init_fs_api(){ this.fs_api = new FileSystemAPI(cfg.vesta.user_name); } // Init after created Vesta User!
+	init_fs_api(cfg){ this.fs_api = new FileSystemAPI(cfg.vesta.user_name); } // Init after created Vesta User!
 	init_ftp_api(cfg){ this.ftp_api = new FTP_API(cfg.vesta.user_name,cfg.remote.ftp); } // Init after created Vesta User!
 	init_database_api(cfg){ this.database_api = new DataBaseAPI(cfg.vesta.user_name,cfg.local.database.name,cfg.local.database.user,cfg.local.database.password); } // Init after created Vesta User!
 
@@ -81,22 +34,43 @@ class Installer{
 	******************************************/
 
 	delete_user(cfg){
+		if(!cfg || !cfg.vesta || !cfg.vesta.user_name) return Promise.reject('Error deleting user: Wrong parameters!');
 		server_log(`Deleting user ${cfg.vesta.user_name}`);
+		
 		return this.vesta_api.delete_user(cfg.vesta.user_name)
-			.then((result)=>server_log('Deleted user'));
+			.then((result)=>server_log(`Deleted user ${cfg.vesta.user_name}`));
 	}
 
 	create_user(cfg){ 
+		if(!cfg || !cfg.vesta || !cfg.vesta.user_password || !cfg.vesta.user_email || !cfg.vesta.user_name) return Promise.reject('Error creating user: Wrong parameters!');
 		server_log(`Creating user ${cfg.vesta.user_name}`);
+
 		return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
-		.then((result)=>server_log('Created user')); 
+		.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
 	}
 
-	create_domain(cfg){ 
-		server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
-		return 		this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Created domain'))
-		.then(()=>	this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Added domain SSL'))).catch(e=>server_log(e.stdout));
+	create_user_backup_folder(cfg){
+		return this.fs_api.create_dir(cfg.local.backup_dir);
+	}
 
+	restart_user(cfg){
+		return 		this.delete_user(cfg).catch(err=>server_log('Vesta user not deleted'))
+		.then(()=>	this.create_user(cfg))
+		.then(()=>{
+			// Restarting APIS for new user
+			this.init_fs_api();
+			this.init_ftp_api();
+			this.init_wp_api();
+			this.init_database_api();
+			return;
+		})
+		.catch(err=>server_log('Failed to create vesta user'))
+	}
+
+	remove_domain(cfg){ 
+		server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+		return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
+		.then((result)=>server_log('Removed domain')); 
 	}
 
 	clean_domain_dir(cfg){
@@ -109,10 +83,16 @@ class Installer{
 		.then(()=>server_log('Domain folder cleaned'));
 	}
 
-	remove_domain(cfg){ 
-		server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
-		return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
-		.then((result)=>server_log('Removed domain')); 
+	create_domain(cfg){ 
+		server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+		return 		this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Created domain'))
+		.then(()=>	this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain).then((result)=>server_log('Added domain SSL'))).catch(e=>server_log(e.stdout));
+
+	}
+
+	restart_domain(cfg){
+		return 		this.remove_domain(cfg).catch(err=>server_log('Failed to remove domain'))
+		.then(()=>	this.create_domain(cfg));
 	}
 
 	remove_database(cfg){ 
@@ -124,6 +104,11 @@ class Installer{
 		server_log(`Creating database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
 		return this.vesta_api.create_database(cfg.vesta.user_name,cfg.local.database.name_sufix,cfg.local.database.user_sufix,cfg.local.database.password)
 		.then((result)=>server_log('Created database')); 
+	}
+
+	restart_database(cfg){
+		return 		this.remove_database(cfg).catch(err=>server_log('Failed to remove database'))
+		.then(()=>	this.create_database(cfg));
 	}
 
 	/******************************************
@@ -182,6 +167,19 @@ class Installer{
 		));
 	}
 
+	full_site_wp_install(cfg,{restart_user,restart_domain}){
+		return this.full_site_init(cfg,{restart_user,restart_domain})
+		.then(()=>this.download_wp())
+		.then(()=>this.config_wp(cfg))
+		.then(()=>this.install_wp(cfg))
+		.then(()=>{
+			this.install_wp_themes(cfg);
+			this.install_wp_plugins(cfg);
+		})
+		;
+	}
+
+
 	migratedb_replace_domain(cfg){ 
 		server_log('Replacing domain name in database');
 		return this.wp_api.migratedb_find_replace(urlOrigin(cfg.remote.domain),urlOrigin(cfg.local.domain))
@@ -195,7 +193,15 @@ class Installer{
 			)
 			.then(()=>server_log('Replaced path name in database')); 
 	}
-			
+
+	install_migratedb_database(cfg){
+		server_log('Running script '+cfg.remote.backup_database);
+		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
+		.then(()=>	server_log('Script executed'))
+		.then(()=>	this.migratedb_replace_domain(cfg))
+		.then(()=>	this.migratedb_replace_path(cfg))
+		;
+	}
 	
 	/******************************************
 	* RESTORE DUPLICATOR BACKUP
@@ -222,8 +228,8 @@ class Installer{
 		return cfg.remote.duplicator_files_prefix + '_installer.php';	
 	}
 
-	is_duplicator_installer_file(mode,filename){ 
-		return mode==='duplicator' && filename === this.get_duplicator_installer_name();
+	is_duplicator_installer_file(cfg,{mode,filename}){ 
+		return mode==='duplicator' && filename === this.get_duplicator_installer_name(cfg);
 	}
 
 
@@ -237,7 +243,7 @@ class Installer{
 		]);
 	}
 
-	find_files_all_names(cfg,list,no_skip_main){
+	find_files_all_names(cfg,{list,no_skip_main}){
 		let result = [];
 		let mainfile = cfg.remote.backup_files;
 		let find = new RegExp(mainfile.replace(/\.zip/,'')+'\\.z');
@@ -248,10 +254,10 @@ class Installer{
 	}
 
 	get_migratedb_remote_files_all_names(cfg){
-		return this.ftp_api.scan_folder(path.dirname(cfg.remote.backup_files)).then(list=>this.find_files_all_names(cfg,list));
+		return this.ftp_api.scan_folder(path.dirname(cfg.remote.backup_files)).then(list=>this.find_files_all_names(cfg,{list}));
 	}
 
-	unzip_migratedb_files(multipart_support){
+	unzip_migratedb_files(cfg,{multipart_support}){
 		server_log(`Extracting ${cfg.remote.backup_files}`);
 		return this.fs_api.decompress(
 				path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_files)),
@@ -261,14 +267,6 @@ class Installer{
 		.then(server_log(`Extracted ${cfg.remote.backup_files}`));
 	}
 
-	install_migratedb_database(cfg){
-		server_log('Running script '+cfg.remote.backup_database);
-		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
-		.then(()=>	server_log('Script executed'))
-		.then(()=>	this.migratedb_replace_domain())
-		.then(()=>	this.migratedb_replace_path())
-		;
-	}
 
 	/******************************************
 	* GENERAL RESTORE BACKUP FUNCTIONS
@@ -278,13 +276,13 @@ class Installer{
 		let extras = [];
 		switch(mode){
 			case 'migratedb':
-				the_promise = this.get_migratedb_names().then(names=>{
-					if(look_for_parts) return this.get_migratedb_remote_files_all_names().then(extras=>names.concat(extras));
+				the_promise = this.get_migratedb_names(cfg).then(names=>{
+					if(look_for_parts) return this.get_migratedb_remote_files_all_names(cfg).then(extras=>names.concat(extras));
 					else return names;
 				});
 				break;
 			case 'duplicator':
-				the_promise = this.get_duplicator_names();
+				the_promise = this.get_duplicator_names(cfg);
 				break;
 			
 			default:break;
@@ -297,7 +295,7 @@ class Installer{
 				filename:				the_filename,
 				remote_backup_filename:	the_download,
 				local_backup_filename:	path.join(cfg.local.backup_dir,the_filename),
-				installation_filename:	path.join(cfg.local.path , (this.is_duplicator_installer_file(mode,the_filename)?'installer.php':the_filename) ),
+				installation_filename:	path.join(cfg.local.path , (this.is_duplicator_installer_file(cfg,{mode,the_filename})?'installer.php':the_filename) ),
 			};
 		}));
 	}
@@ -336,51 +334,11 @@ class Installer{
 	* PRESET ROUTINES 
 	******************************************/
 
-	create_user_backup_folder(cfg){
-		return this.fs_api.create_dir(cfg.local.backup_dir);
-	}
-
-	restart_user(){
-		return 		this.delete_user().catch(err=>server_log('Vesta user not deleted'))
-		.then(()=>	this.create_user())
-		.then(()=>{
-			// Restarting APIS for new user
-			this.init_fs_api();
-			this.init_ftp_api();
-			this.init_wp_api();
-			this.init_database_api();
-			return;
-		})
-		.catch(err=>server_log('Failed to create vesta user'))
-	}
-
-	restart_domain(){
-		return 		this.remove_domain().catch(err=>server_log('Failed to remove domain'))
-		.then(()=>	this.create_domain());
-	}
-
-	restart_database(){
-		return 		this.remove_database().catch(err=>server_log('Failed to remove database'))
-		.then(()=>	this.create_database());
-	}
-
-	full_site_init(delete_user,restart_domain){
-		return 			(delete_user? this.restart_user() : Promise.resolve(true))
-			.then(()=>	this.create_user_backup_folder())
-			.then(()=>	(restart_domain? this.restart_domain() : this.clean_domain_dir()))
-			.then(()=>	this.restart_database())
-		;
-	}
-
-	full_site_wp_install(delete_user,restart_domain){
-		return this.full_site_init(delete_user,restart_domain)
-		.then(()=>this.download_wp())
-		.then(()=>this.config_wp())
-		.then(()=>this.install_wp())
-		.then(()=>{
-			this.install_wp_themes();
-			this.install_wp_plugins();
-		})
+	full_site_init(cfg,{restart_user,restart_domain}){
+		return 			(restart_user? this.restart_user(cfg) : Promise.resolve(true))
+			.then(()=>	this.create_user_backup_folder(cfg))
+			.then(()=>	( (restart_user || restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
+			.then(()=>	this.restart_database(cfg))
 		;
 	}
 
@@ -399,23 +357,23 @@ class Installer{
 		});
 	}
 
-	install_backup_files(mode,backup_full_names){
+	install_backup_files(cfg,{mode,backup_full_names}){
 		if(mode==='duplicator'){
 			return 	this.transfer_files(backup_full_names)
-			.then(	()=>this.configure_duplicator_installer() );
+			.then(	()=>this.configure_duplicator_installer(cfg) );
 		}
 		else if(mode==='migratedb'){
-			return 		this.unzip_migratedb_files(false)
-			.then(()=>	this.config_wp_manually())
-			.then(()=>	this.install_migratedb_database());
+			return 		this.unzip_migratedb_files(cfg,{multipart_support:false})
+			.then(()=>	this.config_wp_manually(cfg))
+			.then(()=>	this.install_migratedb_database(cfg));
 		}
 	}
 
-	full_site_backup_restore({mode,delete_user,restart_domain,download_method}){	
-		return this.full_site_init(delete_user,restart_domain)
-			.then(()=>this.get_backup_full_names(mode,download_method,false))
+	full_site_backup_restore(cfg,{mode,restart_user,restart_domain,download_method}){	
+		return this.full_site_init(cfg,{restart_user,restart_domain})
+			.then(()=>this.get_backup_full_names(cfg,{mode,download_method,look_for_parts:false}))
 			.then(backup_full_names=>
-				this.get_backup_files(download_method,backup_full_names).then(()=>this.install_backup_files(mode,backup_full_names))
+				this.get_backup_files(download_method,backup_full_names).then(()=>this.install_backup_files(cfg,{mode,backup_full_names}))
 			)
 			.catch(e=>server_log('Failed full_site_init',e));
 	}

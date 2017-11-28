@@ -1,12 +1,13 @@
 const { Installer } = require('./installer.js');
-const { server_log,duplicateObj } = require('./modules/util.js');
+const { server_log, server_error, duplicateObj } = require('./modules/util.js');
 const settings = require('./modules/settings');
 
 function runInstaller(cfg){
-
-	console.log('Vamoooo',cfg);
 	
-	// let installer = new Installer(cfg);
+	// console.log('Vamoooo',cfg);
+	let installer = new Installer(cfg);
+	installer.delete_user({}).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.create_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	
 	// let restore_mode = 'duplicator';
 	/*let restore_mode = 'migratedb';
@@ -33,16 +34,17 @@ function runInstaller(cfg){
 }
 
 function processSettings(sessionSettings,siteSettings,appSettings){
-	newSettings = settings.translateSettings(settings.translateSettings(siteSettings,sessionSettings));
+	newSettings = settings.translateSettings(settings.joinSettings(siteSettings,sessionSettings));
 	delete(newSettings.local.subdomain);
+	delete(newSettings.subdomain_sufix);
 	
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
 	newSettings.remote.ftp.password = 'algunawea';
 	newSettings.robots_template = appSettings.robots_template;
 	// TEMPORARY
-	newSettings.wordpress = settings.translateSettings(sessionSettings.wordpress,appSettings);
-	newSettings.remote.duplicator_files_prefix = sessionSettings.duplicator_files_prefix;
+	// newSettings.wordpress = settings.translateSettings(sessionSettings.wordpress,appSettings);
+	// newSettings.remote.duplicator_files_prefix = sessionSettings.duplicator_files_prefix;
 	return newSettings;
 
 }

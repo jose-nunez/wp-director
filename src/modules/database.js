@@ -33,7 +33,7 @@ class DB{
 	getStageSettings(site_name){
 		if(!site_name) throw new Error('Database: No site name defined');
 
-		let query = site_name?{name: site_name}:null;
+		let query = site_name?{site_name: site_name}:null;
 		return this.find('stagesites',query,{'_id':false}).then(cursor=>cursor.next());
 		
 	}
