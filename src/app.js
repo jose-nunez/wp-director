@@ -38,6 +38,7 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 	
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
+	newSettings.remote.ftp.password = 'algunawea';
 	newSettings.robots_template = appSettings.robots_template;
 	// TEMPORARY
 	newSettings.wordpress = settings.translateSettings(sessionSettings.wordpress,appSettings);

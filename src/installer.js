@@ -58,26 +58,12 @@ const { server_log , urlOrigin , lsTrim , rsTrim} = require('./modules/util.js')
 class Installer{
 
 	constructor(cfg){
-		this.vesta_api;
-		this.wp_api;
-		this.fs_api;
-		this.ftp_api;
-		this.database_api;
-
-		this.cfg = cfg;
-		this.db_name = cfg.v_user_name+'_'+cfg.db_name_sufix;
-		this.db_user = cfg.v_user_name+'_'+cfg.db_user_sufix;
-		this.pre_domain_path = `/home/${cfg.v_user_name}/web/${cfg.domain_name}/`;
-		this.domain_path = this.pre_domain_path+`public_html/`;
-		this.domain_path_nts = this.pre_domain_path+`public_html`; //NO TRAILING SLASH
-		this.local_backup_dir = `/home/admin/storage/backups/${cfg.v_user_name}/`;
-
-		this.init_vesta_api();
+		this.init_vesta_api(cfg);
 		// Reinitiate in case of User restart
-		this.init_wp_api();
-		this.init_fs_api();
-		this.init_ftp_api();
-		this.init_database_api();
+		this.init_wp_api(cfg);
+		this.init_fs_api(cfg);
+		this.init_ftp_api(cfg);
+		this.init_database_api(cfg);
 	}
 
 
@@ -85,10 +71,10 @@ class Installer{
 	* APIs 
 	******************************************/
 	init_vesta_api(){ this.vesta_api = new VestaAPI(/*DON'T CHANGE USER*/);	}
-	init_wp_api(){ this.wp_api = new WP_API(this.cfg.v_user_name,this.domain_path); } // Init after created Vesta User!
-	init_fs_api(){ this.fs_api = new FileSystemAPI(this.cfg.v_user_name); } // Init after created Vesta User!
-	init_ftp_api(){ this.ftp_api = new FTP_API(this.cfg.v_user_name,this.cfg.backup_ftp_connection); } // Init after created Vesta User!
-	init_database_api(){ this.database_api = new DataBaseAPI(this.cfg.v_user_name,this.db_name,this.db_user,this.cfg.db_pass); } // Init after created Vesta User!
+	init_wp_api(cfg){ this.wp_api = new WP_API(cfg.vesta.user_name,cfg.local.path); } // Init after created Vesta User!
+	init_fs_api(){ this.fs_api = new FileSystemAPI(cfg.vesta.user_name); } // Init after created Vesta User!
+	init_ftp_api(cfg){ this.ftp_api = new FTP_API(cfg.vesta.user_name,cfg.remote.ftp); } // Init after created Vesta User!
+	init_database_api(cfg){ this.database_api = new DataBaseAPI(cfg.vesta.user_name,cfg.local.database.name,cfg.local.database.user,cfg.local.database.password); } // Init after created Vesta User!
 
 	/******************************************
 	* VESTA ADMIN 
@@ -159,7 +145,7 @@ class Installer{
 	// https://regex101.com/r/pitmX3/1
 	config_wp_manually(cfg){
 		server_log(`Manual generate wp-config.php`);
-		let wpconfig = this.domain_path + 'wp-config.php';
+		let wpconfig = path.join(cfg.local.path , 'wp-config.php');
 		return this.fs_api.replace_in_file(wpconfig,[
 			{find:/define\s*?\(\s*?('|")DB_NAME('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_NAME','${cfg.local.database.name}');`},
 			{find:/define\s*?\(\s*?('|")DB_USER('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_USER','${cfg.local.database.user}');`},
