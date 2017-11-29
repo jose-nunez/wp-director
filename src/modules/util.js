@@ -51,9 +51,10 @@ let copyAttrs  =exports.copyAttrs = function(prev,next){
 	}
 }
 
+
 let findValue = exports.findValue = function(obj,key/*in dot notation*/){
 	if(!key) return;
-	else if(obj[key]) return ''+obj[key]; //Convert to string!
+	else if(obj[key]) return obj[key];
 	else{
 		let parent_key = key.replace(/\..*/,'');
 		let sub_keys = key.replace(/.*?\./,'');
@@ -72,7 +73,7 @@ let translateValue = exports.translateValue = function(oldValue,source,nullify){
 			let newValue = findValue(source,template.replace(/[\$\{\}]/g,''));
 			if(newValue===null && nullify) newValue = '';
 			else if(newValue===null && !nullify) newValue = template;
-			else newValue = translateValue(newValue,source,nullify); //CHAIN TRANSLATE | How to avoid circular reference?
+			else newValue = translateValue(newValue+''/*Convert to string!*/,source,nullify); //CHAIN TRANSLATE | How to avoid circular reference?
 			r = r.replace(template,newValue);
 		});
 	}
@@ -92,6 +93,13 @@ let translateValues = exports.translateValues = function(value,source,nullify){
 	else return value;
 }
 
+let checkValues = exports.checkValues = function(...vars){
+	// {obj,keys:[key/*in dot notation*/]}
+	return vars.every(elem=>{
+		if(elem.keys) return elem.keys.every(key=>findValue(elem.obj,key)); 
+		else return false;
+	},false);
+}
 
 let duplicateObj = exports.duplicateObj = function (obj){
 	return JSON.parse(JSON.stringify(obj));

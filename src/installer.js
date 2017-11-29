@@ -5,7 +5,7 @@ const { WP_API } = require('./api/wp_api');
 const { FileSystemAPI } = require('./api/file_system_api');
 const { FTP_API } = require('./api/ftp_api');
 const { DataBaseAPI } = require('./api/data_base_api');
-const { server_log , urlOrigin , lsTrim , rsTrim} = require('./modules/util.js');
+const { server_log , urlOrigin , lsTrim , rsTrim , checkValues} = require('./modules/util.js');
 
 
 class Installer{
@@ -29,48 +29,60 @@ class Installer{
 	init_ftp_api(cfg){ this.ftp_api = new FTP_API(cfg.vesta.user_name,cfg.remote.ftp); } // Init after created Vesta User!
 	init_database_api(cfg){ this.database_api = new DataBaseAPI(cfg.vesta.user_name,cfg.local.database.name,cfg.local.database.user,cfg.local.database.password); } // Init after created Vesta User!
 
+	
+	checkValues(cfg,keys,errorMsg){
+		if(!checkValues({obj:{cfg},keys})) return Promise.reject(new Error(errorMsg));
+		else return Promise.resolve();
+	}
+
 	/******************************************
 	* VESTA ADMIN 
 	******************************************/
 
 	delete_user(cfg){
-		if(!cfg || !cfg.vesta || !cfg.vesta.user_name) return Promise.reject('Error deleting user: Wrong parameters!');
-		server_log(`Deleting user ${cfg.vesta.user_name}`);
-		
-		return this.vesta_api.delete_user(cfg.vesta.user_name)
+		return this.checkValues(cfg,['cfg.vesta.user_name'],`Can't delete user: Wrong parameters!`).then(()=>{
+			server_log(`Deleting user ${cfg.vesta.user_name}`);
+			return this.vesta_api.delete_user(cfg.vesta.user_name)
 			.then((result)=>server_log(`Deleted user ${cfg.vesta.user_name}`));
+		});
 	}
 
-	create_user(cfg){ 
-		if(!cfg || !cfg.vesta || !cfg.vesta.user_password || !cfg.vesta.user_email || !cfg.vesta.user_name) return Promise.reject('Error creating user: Wrong parameters!');
-		server_log(`Creating user ${cfg.vesta.user_name}`);
-
-		return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
-		.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
+	create_user(cfg){
+		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't create user: Wrong parameters!`).then(()=>{
+			server_log(`Creating user ${cfg.vesta.user_name}`);
+			return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
+			.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
+		});
 	}
 
 	create_user_backup_folder(cfg){
-		return this.fs_api.create_dir(cfg.local.backup_dir);
+		return this.checkValues(cfg,['cfg.local.backup_dir'],`Can't create user backup folder: Wrong parameters!`).then(()=>{
+			server_log(`Creating user backup folder ${cfg.local.backup_dir}`);
+			return this.fs_api.create_dir(cfg.local.backup_dir,cfg.local.backup_dir_owner)
+			.then(()=>server_log(`Created user backup folder ${cfg.local.backup_dir}`));
+		});
 	}
 
 	restart_user(cfg){
-		return 		this.delete_user(cfg).catch(err=>server_log('Vesta user not deleted'))
-		.then(()=>	this.create_user(cfg))
-		.then(()=>{
-			// Restarting APIS for new user
-			this.init_fs_api();
-			this.init_ftp_api();
-			this.init_wp_api();
-			this.init_database_api();
-			return;
-		})
-		.catch(err=>server_log('Failed to create vesta user'))
+		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't restart user: Wrong parameters!`).then(()=>{
+			return 		this.delete_user(cfg).catch(err=>server_log(`User ${cfg.vesta.user_name} not deleted`)) //Skips deleting error
+			.then(()=>	this.create_user(cfg))
+			.then(()=>{
+				// Restarting APIS for new user
+				this.init_fs_api(cfg);
+				this.init_ftp_api(cfg);
+				this.init_wp_api(cfg);
+				this.init_database_api(cfg);
+			});
+		});
 	}
 
 	remove_domain(cfg){ 
-		server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
-		return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
-		.then((result)=>server_log('Removed domain')); 
+		return this.checkValues(cfg,['cfg.local.domain','cfg.vesta.user_name'],`Can't remove domain: Wrong parameters!`).then(()=>{
+			server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+			return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
+			.then((result)=>server_log(`Removed domain ${cfg.local.domain}`)); 
+		});
 	}
 
 	clean_domain_dir(cfg){

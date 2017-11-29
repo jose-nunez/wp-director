@@ -11,8 +11,9 @@ class FileSystemAPI extends SystemAPI{
 		super(v_user_name);
 	}
 
-	update_owner(dest){
-		if(this.v_user_name) return fse.chown(dest,userid.uid(this.v_user_name),userid.gid(this.v_user_name));
+	update_owner(dest,owner){
+		if(owner) return fse.chown(dest,userid.uid(owner),userid.gid(owner));
+		else if(this.v_user_name) return fse.chown(dest,userid.uid(this.v_user_name),userid.gid(this.v_user_name));
 	}
 
 	delete_file(src){
@@ -26,8 +27,8 @@ class FileSystemAPI extends SystemAPI{
 		else return this.sys_call('rm','-rf',path);
 	}
 
-	create_dir(path){
-		return fse.mkdirp(path).then(()=>this.update_owner(path));
+	create_dir(path,owner){
+		return fse.mkdirp(path).then(()=>this.update_owner(path,owner));
 	}
 
 	read_file(src){

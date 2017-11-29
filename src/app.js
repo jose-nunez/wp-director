@@ -6,8 +6,15 @@ function runInstaller(cfg){
 	
 	// console.log('Vamoooo',cfg);
 	let installer = new Installer(cfg);
-	installer.delete_user({}).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.delete_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.create_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.create_user_backup_folder(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	installer.restart_user({vesta:{}}).catch(e=>server_error(e)).then(()=>process.exit(0));
+
+
+
+
+
 	
 	// let restore_mode = 'duplicator';
 	/*let restore_mode = 'migratedb';
