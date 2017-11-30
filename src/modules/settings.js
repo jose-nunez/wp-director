@@ -23,9 +23,11 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 	let default_settings = getDefaultSettings();
 	let dbconnection = default_settings.app.dbconnection;	
 	let db = new DB(dbconnection);
-	return db.getStageSettings(site_name)
-		.then(site_settings=>joinSettings(default_settings.site,site_settings))
-		// .then(site_settings=>translateSettings(site_settings));
+	if(site_name) return db.getStageSettings(site_name).then(site_settings=>joinSettings(default_settings.site,site_settings))
+	else{ 
+		delete(default_settings.site.remote);//NO remote site as there is no site loaded
+		return Promise.resolve(default_settings.site);
+	}
 }
 
 let getSessionSettings = exports.getSessionSettings = function(){

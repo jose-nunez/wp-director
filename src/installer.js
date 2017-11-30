@@ -26,7 +26,9 @@ class Installer{
 	init_vesta_api(){ this.vesta_api = new VestaAPI(/*DON'T CHANGE USER*/);	}
 	init_wp_api(cfg){ this.wp_api = new WP_API(cfg.vesta.user_name,cfg.local.path); } // Init after created Vesta User!
 	init_fs_api(cfg){ this.fs_api = new FileSystemAPI(cfg.vesta.user_name); } // Init after created Vesta User!
-	init_ftp_api(cfg){ this.ftp_api = new FTP_API(cfg.vesta.user_name,cfg.remote.ftp); } // Init after created Vesta User!
+	init_ftp_api(cfg){ 
+		if(cfg.remote) this.ftp_api = new FTP_API(cfg.vesta.user_name,cfg.remote.ftp); 
+	} // Init after created Vesta User!
 	init_database_api(cfg){ this.database_api = new DataBaseAPI(cfg.vesta.user_name,cfg.local.database.name,cfg.local.database.user,cfg.local.database.password); } // Init after created Vesta User!
 
 	
@@ -215,18 +217,6 @@ class Installer{
 			return Promise.resolve();
 		}
 	}
-
-	full_site_wp_install(cfg,{restart_user,restart_domain}){
-		return this.full_site_init(cfg,{restart_user,restart_domain})
-		.then(()=>this.download_wp())
-		.then(()=>this.config_wp(cfg))
-		.then(()=>this.install_wp(cfg))
-		.then(()=>{
-			this.install_wp_themes(cfg);
-			this.install_wp_plugins(cfg);
-		})
-		;
-	}
 	
 	/******************************************
 	* RESTORE DUPLICATOR BACKUP
@@ -386,6 +376,18 @@ class Installer{
 			.then(()=>	this.create_user_backup_folder(cfg))
 			.then(()=>	( (restart_user || restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
 			.then(()=>	this.restart_database(cfg))
+		;
+	}
+
+	full_site_wp_install(cfg,{restart_user,restart_domain}){
+		return this.full_site_init(cfg,{restart_user,restart_domain})
+		.then(()=>this.download_wp())
+		.then(()=>this.config_wp(cfg))
+		.then(()=>this.install_wp(cfg))
+		.then(()=>{
+			this.install_wp_themes(cfg);
+			this.install_wp_plugins(cfg);
+		})
 		;
 	}
 

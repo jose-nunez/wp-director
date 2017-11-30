@@ -1,10 +1,10 @@
 const { Installer } = require('./installer.js');
-const { server_log, server_error, duplicateObj } = require('./modules/util.js');
+const { server_log, server_error, checkValues , duplicateObj } = require('./modules/util.js');
 const settings = require('./modules/settings');
 
 function runInstaller(cfg){
 	
-	// console.log('Vamoooo',cfg);
+	console.log('Vamoooo',cfg);
 
 	let installer = new Installer(cfg);
 	// installer.delete_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
@@ -21,7 +21,9 @@ function runInstaller(cfg){
 	// installer.config_wp_manually(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.install_wp(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.install_wp_themes(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
-	installer.install_wp_plugins(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.install_wp_plugins(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	
+	// installer.full_site_wp_install(cfg,{restart_user,restart_domain}).catch(e=>server_error(e)).then(()=>process.exit(0));
 
 
 	
@@ -56,7 +58,7 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 	
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
-	newSettings.remote.ftp.password = 'algunawea';
+	if(newSettings.remote && newSettings.remote.ftp) newSettings.remote.ftp.password = 'algunawea';
 	newSettings.robots_template = appSettings.robots_template;
 
 	// Each theme and plugin has to be an array
@@ -70,11 +72,8 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 function run(){
 	let sessionSettings = settings.getSessionSettings();
 	let appSettings = settings.getAppSettings();
-
 	return settings.getSiteSettings(sessionSettings.site_name).then(siteSettings=>{
-
 		let newSet = processSettings(sessionSettings,siteSettings,appSettings)
-
 		return runInstaller(newSet);
 	});
 }

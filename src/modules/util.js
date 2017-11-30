@@ -96,7 +96,7 @@ let translateValues = exports.translateValues = function(value,source,nullify){
 let checkValues = exports.checkValues = function(...vars){
 	// {obj,keys:[key/*in dot notation*/]}
 	return vars.every(elem=>{
-		if(elem.keys) return elem.keys.every(key=>findValue(elem.obj,key)); 
+		if(elem.keys instanceof Array) return elem.keys.every(key=>findValue(elem.obj,key)); 
 		else return false;
 	},false);
 }
