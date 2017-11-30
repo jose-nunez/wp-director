@@ -5,14 +5,23 @@ const settings = require('./modules/settings');
 function runInstaller(cfg){
 	
 	// console.log('Vamoooo',cfg);
+
 	let installer = new Installer(cfg);
 	// installer.delete_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.create_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.create_user_backup_folder(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
-	installer.restart_user({vesta:{}}).catch(e=>server_error(e)).then(()=>process.exit(0));
-
-
-
+	// installer.restart_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.create_domain(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.remove_domain(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.clean_domain_dir(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.remove_database(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.restart_database(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.download_wp().catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.config_wp(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.config_wp_manually(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	// installer.install_wp(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	installer.install_wp_themes(cfg).catch(e=>server_error(e));
+	installer.install_wp_plugins(cfg).catch(e=>server_error(e));
 
 
 	
@@ -43,17 +52,18 @@ function runInstaller(cfg){
 function processSettings(sessionSettings,siteSettings,appSettings){
 	newSettings = settings.translateSettings(settings.joinSettings(siteSettings,sessionSettings));
 	delete(newSettings.local.subdomain);
-	delete(newSettings.subdomain_sufix);
+	delete(newSettings.local.subdomain_sufix);
 	
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
 	newSettings.remote.ftp.password = 'algunawea';
 	newSettings.robots_template = appSettings.robots_template;
-	// TEMPORARY
-	// newSettings.wordpress = settings.translateSettings(sessionSettings.wordpress,appSettings);
-	// newSettings.remote.duplicator_files_prefix = sessionSettings.duplicator_files_prefix;
-	return newSettings;
 
+	// Each theme and plugin has to be an array
+	newSettings.wordpress.themes = newSettings.wordpress.themes.map(theme=>theme.split('|'));
+	newSettings.wordpress.plugins = newSettings.wordpress.plugins.map(plugin=>plugin.split('|'));
+
+	return newSettings;
 }
 
 

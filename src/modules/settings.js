@@ -4,7 +4,7 @@ const path = require('path');
 const util = require('./util');
 
 let translateSettings = exports.translateSettings = function(settings,source){
-	return util.translateValues(settings,source||settings);
+	return util.translateValues(settings,source||settings,true);
 }
 
 let joinSettings = exports.joinSettings = function(deaultSettings,newSettings){
