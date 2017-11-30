@@ -182,32 +182,38 @@ class Installer{
 				cfg.wordpress.email,
 				cfg.wordpress.skip_email
 			)
-			.then((result)=>server_log(result.stdout)); 
+			.then(r=>server_log(r.stdout)); 
 		});
 	}
 
 	install_wp_themes(cfg){ 
 		server_log(`Installing Themes`);
 		if(cfg && cfg.wordpress && cfg.wordpress.themes && cfg.wordpress.themes instanceof Array){
-			cfg.wordpress.themes.forEach(theme=>(
+			return Promise.all(cfg.wordpress.themes.map(theme=>(
 				this.wp_api.install_theme(theme[0],theme[1])
 				.then(r=>server_log(r.stdout))
-			));
+			)))
+			.then(r=>server_log('All themes installed'));
 		}
-		else server_log('No themes to install');
-		return Promise.resolve();
+		else {
+			server_log('No themes to install');
+			return Promise.resolve();
+		}
 	}
 
 	install_wp_plugins(cfg){ 
 		server_log(`Installing Plugins`);
 		if(cfg && cfg.wordpress && cfg.wordpress.plugins && cfg.wordpress.plugins instanceof Array){
-			cfg.plugins.forEach(plugin=>(
+			return Promise.all(cfg.wordpress.plugins.map(plugin=>(
 				this.wp_api.install_plugin(plugin[0],plugin[1])
 				.then(r=>server_log(r.stdout))
-			));
+			)))
+			.then(r=>server_log('All plugins installed'));
 		}
-		else server_log('No plugins to install');
-		return Promise.resolve();
+		else{ 
+			server_log('No plugins to install');
+			return Promise.resolve();
+		}
 	}
 
 	full_site_wp_install(cfg,{restart_user,restart_domain}){
@@ -247,7 +253,7 @@ class Installer{
 		return cfg.remote.duplicator_files_prefix + '_installer.php';	
 	}
 
-	is_duplicator_installer_file(cfg,{mode,filename}){ 
+	is_duplicator_installer_file(cfg,{mode,filename}){
 		return mode==='duplicator' && filename === this.get_duplicator_installer_name(cfg);
 	}
 

@@ -20,8 +20,8 @@ function runInstaller(cfg){
 	// installer.config_wp(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.config_wp_manually(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.install_wp(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
-	installer.install_wp_themes(cfg).catch(e=>server_error(e));
-	installer.install_wp_plugins(cfg).catch(e=>server_error(e));
+	// installer.install_wp_themes(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
+	installer.install_wp_plugins(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 
 
 	
