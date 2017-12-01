@@ -13,7 +13,7 @@ function c(db_name,db_user,db_pass){
 		});
 		return database;
 	}
-	else return Promise.reject(new Error('No credentials provided'));
+	else return Promise.reject(new Error('No database credentials provided'));
 }
 
 class DB{

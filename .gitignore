@@ -1,4 +1,3 @@
 node_modules
 src/sftp-config.json
 src/test.js
-src/config.js

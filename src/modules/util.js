@@ -1,3 +1,6 @@
+// const url = require('url');
+const path = require('path');
+
 let server_log = exports.server_log = function(...args){
 	process.stdout.write(printDate()+' ');
 	console.log.apply(null,args);
@@ -105,9 +108,9 @@ let duplicateObj = exports.duplicateObj = function (obj){
 	return JSON.parse(JSON.stringify(obj));
 }
 
-let urlOrigin = exports.urlOrigin = function(url){
-	return new url.URL(url).origin;
-}
+/*let urlOrigin = exports.urlOrigin = function(the_url){
+	return new url.URL(the_url).origin;
+}*/
 
 // left path trim
 let lPTrim = exports.lPTrim = function(str){

@@ -10,6 +10,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "child-process-promise": "^2.2.1",
+    "command-line-args": "^4.0.7",
     "fs-extra": "^4.0.2",
     "ftp": "^0.3.10",
     "mongodb": "^2.2.33",

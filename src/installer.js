@@ -5,7 +5,7 @@ const { WP_API } = require('./api/wp_api');
 const { FileSystemAPI } = require('./api/file_system_api');
 const { FTP_API } = require('./api/ftp_api');
 const { DataBaseAPI } = require('./api/data_base_api');
-const { server_log , urlOrigin , lsTrim , rsTrim , checkValues} = require('./modules/util.js');
+const { server_log , urlOrigin , lPTrim , lWTrim , rPTrim , rWTrim , checkValues} = require('./modules/util.js');
 
 
 class Installer{
@@ -243,8 +243,8 @@ class Installer{
 		return cfg.remote.duplicator_files_prefix + '_installer.php';	
 	}
 
-	is_duplicator_installer_file(cfg,{mode,filename}){
-		return mode==='duplicator' && filename === this.get_duplicator_installer_name(cfg);
+	is_duplicator_installer_file(cfg,filename){
+		return cfg.restore_mode==='duplicator' && filename === this.get_duplicator_installer_name(cfg);
 	}
 
 
@@ -253,8 +253,8 @@ class Installer{
 	******************************************/
 	get_migratedb_names(cfg){
 		return Promise.resolve([
-			cfg.remote.backup_database,
 			cfg.remote.backup_files,
+			cfg.remote.backup_database,
 		]);
 	}
 
@@ -284,11 +284,11 @@ class Installer{
 
 	migratedb_replace_domain(cfg){ 
 		server_log('Replacing domain name in database');
-		return this.wp_api.migratedb_find_replace(urlOrigin(cfg.remote.domain),urlOrigin(cfg.local.domain))
+		return this.wp_api.migratedb_find_replace(rWTrim(cfg.remote.domain).replace(/https{0,1}:\/\//,''),rWTrim(cfg.local.domain).replace(/https{0,1}:\/\//,''))
 			.then(()=>server_log('Replaced domain name in database')); 
 	}
 	migratedb_replace_path(cfg){ 
-		server_log('Replacing path name in database');
+		server_log(`Replacing path name in database`);
 		return this.wp_api.migratedb_find_replace(
 				rPTrim(cfg.remote.path),
 				rPTrim(cfg.local.path)
@@ -297,9 +297,9 @@ class Installer{
 	}
 
 	install_migratedb_database(cfg){
-		server_log('Running script '+cfg.remote.backup_database);
+		server_log(`Running script ${cfg.remote.backup_database}`);
 		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
-		.then(()=>	server_log('Script executed'))
+		.then(()=>	server_log(`Script ${cfg.remote.backup_database} executed`))
 		.then(()=>	this.migratedb_replace_domain(cfg))
 		.then(()=>	this.migratedb_replace_path(cfg))
 		;
@@ -308,11 +308,11 @@ class Installer{
 	/******************************************
 	* GENERAL RESTORE BACKUP FUNCTIONS
 	******************************************/
-	get_backup_full_names(cfg,{mode,method,look_for_parts}){
+	get_backup_full_names(cfg,look_for_parts){
 		let the_promise;
 		let extras = [];
-		switch(mode){
-			case 'migratedb':
+		switch(cfg.restore_mode){
+			case 'manual':
 				the_promise = this.get_migratedb_names(cfg).then(names=>{
 					if(look_for_parts) return this.get_migratedb_remote_files_all_names(cfg).then(extras=>names.concat(extras));
 					else return names;
@@ -322,17 +322,21 @@ class Installer{
 				the_promise = this.get_duplicator_names(cfg);
 				break;
 			
-			default:break;
+			default:throw new Error('Wrong restore mode'); break;
 		}
 
 		return the_promise.then(names=>names.map(filename=>{
 			let the_filename = path.basename(filename);
-			let the_download = method=='get'? rWTrim(cfg.remote.domain)+'/'+lWTrim(filename) : filename;
+			let the_folder = cfg.remote[cfg.restore_mode+'_backups_folder'] || cfg.remote.backups_folder || '';
+
+			let the_download = cfg.download_method=='get'? 
+								(`${rWTrim(cfg.remote.domain)}/${lWTrim(rWTrim(the_folder))}/${lWTrim(the_filename)}`).replace(/\/\/+/g,'/') : 
+								path.join(the_folder,the_filename);
 			return {
 				filename:				the_filename,
 				remote_backup_filename:	the_download,
 				local_backup_filename:	path.join(cfg.local.backup_dir,the_filename),
-				installation_filename:	path.join(cfg.local.path , (this.is_duplicator_installer_file(cfg,{mode,the_filename})?'installer.php':the_filename) ),
+				installation_filename:	path.join(cfg.local.path , (this.is_duplicator_installer_file(cfg,the_filename)?'installer.php':the_filename) ),
 			};
 		}));
 	}
@@ -351,8 +355,8 @@ class Installer{
 			.then(()=>server_log('All backup files found in storage'));
 	}
 
-	download_files(method='get',backup_full_names){
-		let downloader = method=='ftp'? this.ftp_api : this.fs_api;
+	download_files(download_method='get',backup_full_names){
+		let downloader = download_method=='ftp'? this.ftp_api : this.fs_api;
 		return this.fileproc(backup_full_names,({filename,remote_backup_filename,local_backup_filename})=>{
 			server_log('Downloading '+remote_backup_filename);
 			return downloader.download_file(remote_backup_filename,local_backup_filename,true).then(result=>server_log('Downloaded '+filename));
@@ -392,40 +396,56 @@ class Installer{
 
 
 	get_backup_files(download_method,backup_full_names){
-		return this.find_local_files(backup_full_names).then(()=>{
-			/*if(this.cfg.force_download_backups){
+		return this.find_local_files(backup_full_names).then(()=>backup_full_names
+		/*{
+			if(this.cfg.force_download_backups){
 				server_log('Forcing download');
 				return 			this.delete_local_files(backup_full_names).catch(e=>{})
 					.then(()=>	this.download_files(download_method,backup_full_names));
-			}*/
-		})
+			}
+		}*/
+		)
 		.catch(e=>{
 			server_log('Downloading backups');
 			return this.download_files(download_method,backup_full_names);
 		});
 	}
 
-	install_backup_files(cfg,{mode,backup_full_names}){
-		if(mode==='duplicator'){
-			return 	this.transfer_files(backup_full_names)
-			.then(	()=>this.configure_duplicator_installer(cfg) );
+	install_backup_files(cfg,backup_full_names){
+		let the_promise;
+		if(backup_full_names) the_promise = Promise.resolve(backup_full_names);
+		else the_promise = this.get_backup_full_names(cfg,false);
+
+		if(cfg.restore_mode==='duplicator'){
+			return 		the_promise
+			.then(()=>	this.transfer_files(backup_full_names))
+			.then(()=>	this.configure_duplicator_installer(cfg) );
 		}
-		else if(mode==='migratedb'){
-			return 		this.unzip_migratedb_files(cfg,{multipart_support:false})
+		else if(cfg.restore_mode==='manual'){
+			return 		the_promise
+			.then(()=>	this.unzip_migratedb_files(cfg,{multipart_support:false}))
 			.then(()=>	this.config_wp_manually(cfg))
 			.then(()=>	this.install_migratedb_database(cfg));
 		}
 	}
+	
+	download_backup_files(cfg,backup_full_names){
+		let the_promise;
+		if(backup_full_names) the_promise = backup_full_names;
+		else the_promise = this.get_backup_full_names(cfg,false);
 
-	full_site_backup_restore(cfg,{mode,restart_user,restart_domain,download_method}){	
-		return this.full_site_init(cfg,{restart_user,restart_domain})
-			.then(()=>	this.create_user_backup_folder(cfg))
-			.then(()=>this.get_backup_full_names(cfg,{mode,download_method,look_for_parts:false}))
-			.then(backup_full_names=>
-				this.get_backup_files(download_method,backup_full_names).then(()=>this.install_backup_files(cfg,{mode,backup_full_names}))
-			)
-			.catch(e=>server_log('Failed full_site_init',e));
+		return this.create_user_backup_folder(cfg)
+			.then(()=>the_promise)
+			.then(backup_full_names=>this.get_backup_files(cfg.download_method,backup_full_names).then(backup_full_names=>backup_full_names));
 	}
+
+	full_site_backup_restore(cfg,{restart_user,restart_domain}){
+		return this.full_site_init(cfg,{restart_user,restart_domain})
+			.then(()=>this.get_backup_full_names(cfg,false))
+			.then(backup_full_names=>this.download_backup_files(cfg,backup_full_names))
+			.then(backup_full_names=>this.install_backup_files(cfg,backup_full_names))
+	}
+
 }
 
 exports.Installer = Installer;
