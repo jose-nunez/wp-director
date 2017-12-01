@@ -4,7 +4,7 @@ const settings = require('./modules/settings');
 
 function runInstaller(cfg){
 	
-	console.log('Vamoooo',cfg);
+	console.log('Vamoooo',cfg);process.exit(0);
 
 	let installer = new Installer(cfg);
 	// installer.delete_user(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
@@ -23,7 +23,8 @@ function runInstaller(cfg){
 	// installer.install_wp_themes(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	// installer.install_wp_plugins(cfg).catch(e=>server_error(e)).then(()=>process.exit(0));
 	
-	// installer.full_site_wp_install(cfg,{restart_user,restart_domain}).catch(e=>server_error(e)).then(()=>process.exit(0));
+	/*let restart_user=false,restart_domain=false;
+	installer.full_site_wp_install(cfg,{restart_user,restart_domain}).catch(e=>server_error(e)).then(()=>process.exit(0));*/
 
 
 	
@@ -70,7 +71,7 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 
 
 function run(){
-	let sessionSettings = settings.getSessionSettings();
+	let sessionSettings = settings.getSettings('session.yml');
 	let appSettings = settings.getAppSettings();
 	return settings.getSiteSettings(sessionSettings.site_name).then(siteSettings=>{
 		let newSet = processSettings(sessionSettings,siteSettings,appSettings)

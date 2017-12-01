@@ -373,7 +373,6 @@ class Installer{
 
 	full_site_init(cfg,{restart_user,restart_domain}){
 		return 			(restart_user? this.restart_user(cfg) : Promise.resolve(true))
-			.then(()=>	this.create_user_backup_folder(cfg))
 			.then(()=>	( (restart_user || restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
 			.then(()=>	this.restart_database(cfg))
 		;
@@ -381,13 +380,13 @@ class Installer{
 
 	full_site_wp_install(cfg,{restart_user,restart_domain}){
 		return this.full_site_init(cfg,{restart_user,restart_domain})
-		.then(()=>this.download_wp())
-		.then(()=>this.config_wp(cfg))
-		.then(()=>this.install_wp(cfg))
-		.then(()=>{
-			this.install_wp_themes(cfg);
-			this.install_wp_plugins(cfg);
-		})
+			.then(()=>this.download_wp())
+			.then(()=>this.config_wp(cfg))
+			.then(()=>this.install_wp(cfg))
+			.then(()=>Promise.all([
+				this.install_wp_themes(cfg),
+				this.install_wp_plugins(cfg)
+			]))
 		;
 	}
 
@@ -420,6 +419,7 @@ class Installer{
 
 	full_site_backup_restore(cfg,{mode,restart_user,restart_domain,download_method}){	
 		return this.full_site_init(cfg,{restart_user,restart_domain})
+			.then(()=>	this.create_user_backup_folder(cfg))
 			.then(()=>this.get_backup_full_names(cfg,{mode,download_method,look_for_parts:false}))
 			.then(backup_full_names=>
 				this.get_backup_files(download_method,backup_full_names).then(()=>this.install_backup_files(cfg,{mode,backup_full_names}))

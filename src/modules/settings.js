@@ -30,6 +30,10 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 	}
 }
 
-let getSessionSettings = exports.getSessionSettings = function(){
+/*let getSessionSettings = exports.getSessionSettings = function(){
 	return YAML.load(path.join(__dirname,'../session.yml'));
+}*/
+
+let getSettings = exports.getSettings = function(filename){
+	if(filename) return YAML.load(filename);
 }
