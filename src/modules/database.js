@@ -16,28 +16,35 @@ function c(db_name,db_user,db_pass){
 	else return Promise.reject(new Error('No database credentials provided'));
 }
 
+function find(collection,query,projection){		
+	return c().then(db=>{
+		let cursor = db.collection(collection).find(query||{});
+		cursor.project(projection);
+		return cursor;
+	});
+}
+
 class DB{
 	
-	constructor({db_name,db_user,db_pass}){
+	connect({db_name,db_user,db_pass}){
 		c(db_name,db_user,db_pass);
-	}
-
-	find(collection,query,projection){		
-		return c().then(db=>{
-			let cursor = db.collection(collection).find(query);
-			cursor.project(projection);
-			return cursor;
-		});
 	}
 
 	getStageSettings(site_name){
 		if(!site_name) throw new Error('Database: No site name defined');
 
 		let query = site_name?{site_name: site_name}:null;
-		return this.find('stagesites',query,{'_id':false}).then(cursor=>cursor.next());
+		return find('stagesites',query,{'_id':false})
+			.then(cursor=>cursor.next());
 		
+	}
+
+	getSiteList(fullconfig){
+		return find('stagesites',null,{'_id':false})
+			.then(cursor=>cursor.toArray())
+			.then(array=>fullconfig?array:array.map(({site_name})=>site_name));
 	}
 	
 }
 
-exports.DB = DB;
+exports.db = new DB();

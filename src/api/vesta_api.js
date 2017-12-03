@@ -2,6 +2,10 @@ const { SystemAPI } = require('./system_api');
 
 
 class VestaAPI extends SystemAPI{
+
+	/* ***************************
+	CRUD
+	****************************** */
 	constructor(v_user_name){
 		super(v_user_name);
 	}
@@ -33,6 +37,29 @@ class VestaAPI extends SystemAPI{
 	remove_domain(v_user_name,domain_name){ 
 		return this.sys_call('v-delete-domain',v_user_name,domain_name);
 	}
+
+	/* ***************************
+	Read
+	****************************** */
+
+	get_users(){
+		return this.sys_call('v-list-sys-users','json').then(childProcess=>JSON.parse(childProcess.stdout));
+	}
+
+	get_domains(v_user_name){
+		let list_domains = 
+				v_user_name=>this.sys_call('v-list-web-domains',v_user_name,'json')
+				.then(childProcess=>Object.keys(JSON.parse(childProcess.stdout)).map(domain=>({domain,user_name:v_user_name})));
+		
+		if(v_user_name) return list_domains(v_user_name);
+		else{
+			return this.get_users().then(users=>{
+				return Promise.all(users.map(user=>list_domains(user)))
+				.then(domains_arr=>domains_arr.reduce((accumulator, currentValue)=>accumulator.concat(currentValue),[]));
+			});
+		}
+	}
+
 }
 
 exports.VestaAPI = VestaAPI;
