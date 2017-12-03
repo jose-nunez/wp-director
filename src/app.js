@@ -1,6 +1,18 @@
 const { Installer } = require('./installer.js');
 const { server_log, server_error, checkValues , duplicateObj } = require('./modules/util.js');
 const settings = require('./modules/settings');
+const { db } = require('./modules/database');
+
+function initApp(){
+	let app_settings = settings.getAppSettings();
+	let dbconnection = app_settings.dbconnection;
+	let app_args = settings.getCmdArgs();
+	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;
+	if(app_args.db_name) dbconnection.db_name = app_args.db_name;
+	if(app_args.db_user) dbconnection.db_user = app_args.db_user;	
+	db.connect(dbconnection);
+}
+
 
 function runInstaller(cfg){
 
@@ -68,7 +80,7 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
-	
+
 	return newSettings;
 }
 
@@ -88,5 +100,16 @@ function testSettings(){
 	return getSettings().then(newSet=>console.log(newSet));
 }
 
+function get_users(){
+	let vesta_api = new VestaAPI();
+	return vesta_api.get_domains().then(domains=>console.log(domains));
+}
+
+function get_sites(){
+	// DB
+}
+
+
+initApp();
 // run().catch(e=>server_error(e)).then(r=>process.exit(0));
 testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
