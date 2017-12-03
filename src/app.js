@@ -1,5 +1,6 @@
 const { Installer } = require('./installer.js');
 const { server_log, server_error, checkValues , duplicateObj } = require('./modules/util.js');
+const { VestaAPI } = require('./api/vesta_api');
 const settings = require('./modules/settings');
 const { db } = require('./modules/database');
 
@@ -100,16 +101,24 @@ function testSettings(){
 	return getSettings().then(newSet=>console.log(newSet));
 }
 
-function get_users(){
+function get_domains(){
 	let vesta_api = new VestaAPI();
 	return vesta_api.get_domains().then(domains=>console.log(domains));
 }
+function get_users(){
+	let vesta_api = new VestaAPI();
+	return vesta_api.get_users().then(users=>console.log(users));
+}
 
-function get_sites(){
-	// DB
+function get_sites(fullconfig){
+	return db.getSiteList(fullconfig).then(sites=>console.log(sites));
 }
 
 
 initApp();
 // run().catch(e=>server_error(e)).then(r=>process.exit(0));
-testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
+// testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
+// get_domains().catch(e=>server_error(e)).then(r=>process.exit(0));
+// get_users().catch(e=>server_error(e)).then(r=>process.exit(0));
+// get_sites().catch(e=>server_error(e)).then(r=>process.exit(0));
+get_sites(true).catch(e=>server_error(e)).then(r=>process.exit(0));

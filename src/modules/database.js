@@ -18,7 +18,7 @@ function c(db_name,db_user,db_pass){
 
 function find(collection,query,projection){		
 	return c().then(db=>{
-		let cursor = db.collection(collection).find(query);
+		let cursor = db.collection(collection).find(query||{});
 		cursor.project(projection);
 		return cursor;
 	});
@@ -34,8 +34,15 @@ class DB{
 		if(!site_name) throw new Error('Database: No site name defined');
 
 		let query = site_name?{site_name: site_name}:null;
-		return find('stagesites',query,{'_id':false}).then(cursor=>cursor.next());
+		return find('stagesites',query,{'_id':false})
+			.then(cursor=>cursor.next());
 		
+	}
+
+	getSiteList(fullconfig){
+		return find('stagesites',null,{'_id':false})
+			.then(cursor=>cursor.toArray())
+			.then(array=>fullconfig?array:array.map(({site_name})=>site_name));
 	}
 	
 }
