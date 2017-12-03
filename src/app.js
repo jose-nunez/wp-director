@@ -55,8 +55,6 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 	delete(newSettings.local.subdomain);
 	delete(newSettings.local.subdomain_sufix);
 	
-	newSettings.local.database.password = 'algunawea';
-	newSettings.vesta.user_password = 'algunawea';
 	newSettings.robots_template = appSettings.robots_template;
 
 	// Each theme and plugin has to be an array
@@ -68,6 +66,9 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 		
 	}
 
+	newSettings.local.database.password = 'algunawea';
+	newSettings.vesta.user_password = 'algunawea';
+	
 	return newSettings;
 }
 
@@ -87,5 +88,5 @@ function testSettings(){
 	return getSettings().then(newSet=>console.log(newSet));
 }
 
-run().catch(e=>server_error(e)).then(r=>process.exit(0));
-// testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
+// run().catch(e=>server_error(e)).then(r=>process.exit(0));
+testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
