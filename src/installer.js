@@ -375,15 +375,15 @@ class Installer{
 	* PRESET ROUTINES 
 	******************************************/
 
-	full_site_init(cfg,{restart_user,restart_domain}){
-		return 			(restart_user? this.restart_user(cfg) : Promise.resolve(true))
-			.then(()=>	( (restart_user || restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
+	full_site_init(cfg){
+		return 			(cfg.restart_user? this.restart_user(cfg) : Promise.resolve(true))
+			.then(()=>	( (cfg.restart_user || cfg.restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
 			.then(()=>	this.restart_database(cfg))
 		;
 	}
 
-	full_site_wp_install(cfg,{restart_user,restart_domain}){
-		return this.full_site_init(cfg,{restart_user,restart_domain})
+	full_site_wp_install(cfg){
+		return this.full_site_init(cfg)
 			.then(()=>this.download_wp())
 			.then(()=>this.config_wp(cfg))
 			.then(()=>this.install_wp(cfg))
@@ -439,8 +439,8 @@ class Installer{
 			.then(backup_full_names=>this.get_backup_files(cfg.download_method,backup_full_names).then(backup_full_names=>backup_full_names));
 	}
 
-	full_site_backup_restore(cfg,{restart_user,restart_domain}){
-		return this.full_site_init(cfg,{restart_user,restart_domain})
+	full_site_backup_restore(cfg){
+		return this.full_site_init(cfg)
 			.then(()=>this.get_backup_full_names(cfg,false))
 			.then(backup_full_names=>this.download_backup_files(cfg,backup_full_names))
 			.then(backup_full_names=>this.install_backup_files(cfg,backup_full_names))

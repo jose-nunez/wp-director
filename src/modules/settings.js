@@ -42,9 +42,16 @@ let getSettings = exports.getSettings = function(filename){
 
 let getCmdArgs = exports.getCmdArgs = function(){	
 	let optionDefinitions = [
+		// Database
 		{ name: 'db_pass', alias: 'p', type: String },
 		{ name: 'db_name', alias: 'd', type: String },
 		{ name: 'db_user', alias: 'u', type: String },
+		
+		// run
+		{ name: 'operation', alias: 'o', type: String , defaultOption: true },
+		{ name: 'settings', alias: 's', type: String },
+		{ name: 'restart_user', alias: 'U', type: Boolean },
+		{ name: 'restart_domain', alias: 'D', type: Boolean },
 	];
 
 	return commandLineArgs(optionDefinitions);
