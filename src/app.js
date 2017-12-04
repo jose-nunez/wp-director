@@ -3,6 +3,7 @@ const { server_log, server_error, checkValues , duplicateObj } = require('./modu
 const { VestaAPI } = require('./api/vesta_api');
 const settings = require('./modules/settings');
 const { db } = require('./modules/database');
+const server = require('./modules/server');
 
 
 function processSettings(sessionSettings,siteSettings,appSettings){
@@ -54,13 +55,6 @@ function get_sites(fullconfig){
 	return db.getSiteList(fullconfig).then(sites=>console.log(sites));
 }
 
-function initApp(app_args,app_settings){
-	let dbconnection = app_settings.dbconnection;
-	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;
-	if(app_args.db_name) dbconnection.db_name = app_args.db_name;
-	if(app_args.db_user) dbconnection.db_user = app_args.db_user;	
-	db.connect(dbconnection);
-}
 
 function runInstaller(operation,cfg){
 	let run_op;
@@ -82,22 +76,51 @@ function run_file({settings,operation,restart_user,restart_domain}){
 	});
 }
 
-function runApp(){
+function run_operation(app_args){
+	let fn;
+	switch (app_args.operation){
+		case 'to':	fn=testOptions(app_args);break;
+		case 'ts':	fn=testSettings();break;
+		case 'u':	fn=get_users();break;
+		case 's':	fn=get_sites();break;
+		case 'sf':	fn=get_sites(true);break;
+		default:	fn=run_file(app_args);
+	}
+	fn.catch(e=>server_error(e)).then(r=>process.exit(0));
+}
+
+function run_console(){
+	console.log('################\nWelcome to WP Director\n################\nPlease type a command (type exit to stop the app)');
+	let stdin = process.openStdin();
+	stdin.addListener("data", function(d) {
+		console.log("- you entered: " + d.toString().trim());
+	});
+}
+
+function run_server(port){
+	return server.startServer(port);
+}
+
+
+function initApp(app_args,app_settings){
+	let dbconnection = app_settings.dbconnection;
+	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;
+	if(app_args.db_name) dbconnection.db_name = app_args.db_name;
+	if(app_args.db_user) dbconnection.db_user = app_args.db_user;	
+	db.connect(dbconnection);
+}
+
+(function(){
 	let app_settings = settings.getAppSettings();
 	let app_args = settings.getCmdArgs();
 	initApp(app_args,app_settings);
-
-	switch (app_args.operation){
-		case 'to':	return testOptions(app_args);break;
-		case 'ts':	return testSettings();break;
-		default:		return run_file(app_args);
+	if(!app_args.operation){
+		run_server(app_settings.port)
+		.then(()=>run_console())
+		.catch(e=>{server_error(e);process.exit(0)});
+	} 
+	else{
+		run_operation(app_args);
 	}
-}
 
-runApp().catch(e=>server_error(e)).then(r=>process.exit(0));
-// run().catch(e=>server_error(e)).then(r=>process.exit(0));
-// testSettings().catch(e=>server_error(e)).then(r=>process.exit(0));
-// get_domains().catch(e=>server_error(e)).then(r=>process.exit(0));
-// get_users().catch(e=>server_error(e)).then(r=>process.exit(0));
-// get_sites().catch(e=>server_error(e)).then(r=>process.exit(0));
-// get_sites(true).catch(e=>server_error(e)).then(r=>process.exit(0));
+})()
