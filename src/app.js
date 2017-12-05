@@ -90,17 +90,21 @@ function run_operation(app_args){
 }
 
 function run_console(){
-	console.log('################\nWelcome to WP Director\n################\nPlease type a command (type exit to stop the app)');
+	console.log('Please type a command (type exit to stop the app)');
+	process.stdout.write('> ');
+	
 	let stdin = process.openStdin();
 	stdin.addListener("data", function(d) {
-		console.log("- you entered: " + d.toString().trim());
+		let data = d.toString().trim(); 
+		if(data == 'exit'){
+			console.log('Good bye');
+			process.exit(0);
+		}
+		
+		console.log("You entered: " + data);
+		process.stdout.write('> ');
 	});
 }
-
-function run_server(port){
-	return server.startServer(port);
-}
-
 
 function initApp(app_args,app_settings){
 	let dbconnection = app_settings.dbconnection;
@@ -114,10 +118,14 @@ function initApp(app_args,app_settings){
 	let app_settings = settings.getAppSettings();
 	let app_args = settings.getCmdArgs();
 	initApp(app_args,app_settings);
+	
+	console.log('################\nWelcome to WP Director\n################');
+
 	if(!app_args.operation){
-		run_server(app_settings.port)
+		// RUN SERVER AND CONSOLE
+		server.startServer(app_settings.port)
 		.then(()=>run_console())
-		.catch(e=>{server_error(e);process.exit(0)});
+		.catch(e=>{server_error(e);process.exit(0);});
 	} 
 	else{
 		run_operation(app_args);

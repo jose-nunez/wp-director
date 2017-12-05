@@ -33,7 +33,7 @@ function publishServices(app,db,io){
 	
 	app
 	.get('/',function(req,res){
-		res.send(`WP Director is running and listening<br/>${printDate}`);
+		res.send(`WP Director is running and listening<br/>${printDate()}`);
 	})
 	/*.get('/config',function(req,res){
 		res.send(JSON.parse(require('fs').readFileSync(SERVER_PATH_LOCAL+'app_config.json', 'utf8')))
