@@ -49,9 +49,10 @@ let getCmdArgs = exports.getCmdArgs = function(args){
 		
 		// run
 		{ name: 'operation', alias: 'o', type: String , defaultOption: true },
-		{ name: 'settings', alias: 's', type: String },
+		{ name: 'settings_file', alias: 'f', type: String },
 		{ name: 'restart_user', alias: 'U', type: Boolean },
 		{ name: 'restart_domain', alias: 'D', type: Boolean },
+		{ name: 'run_server', alias: 's', type: Boolean },
 	];
 
 	return commandLineArgs(optionDefinitions, args? {argv:args} : null);

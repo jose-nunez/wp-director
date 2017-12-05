@@ -68,8 +68,8 @@ function runInstaller(operation,cfg){
 	return installer[run_op](cfg);
 }
 
-function run_file({settings,operation,restart_user,restart_domain}){
-	return getFileSettings(settings).then(newSet=>{
+function run_file({settings_file,operation,restart_user,restart_domain}){
+	return getFileSettings(settings_file).then(newSet=>{
 		newSet.restart_user = restart_user;
 		newSet.restart_domain = restart_domain;
 		return runInstaller(operation,newSet);
@@ -90,7 +90,7 @@ function run_operation(app_args){
 }
 
 function run_console(){
-	console.log('Please type a command (type exit to stop the app)');
+	console.log('\nPlease type a command (type exit to stop the app)');
 	process.stdout.write('> ');
 	
 	let stdin = process.openStdin();
@@ -100,11 +100,12 @@ function run_console(){
 			console.log('Good bye');
 			process.exit(0);
 		}
-		
 		// console.log("You entered: " + data);
 		console.log("You entered: " , settings.getCmdArgs(data.split(' ')));
 		process.stdout.write('> ');
 	});
+
+	return Promise.resolve();
 }
 
 function initApp(app_args,app_settings){
@@ -122,13 +123,16 @@ function initApp(app_args,app_settings){
 	
 	console.log('################\nWelcome to WP Director\n################');
 
-	if(!app_args.operation){
-		// RUN SERVER AND CONSOLE
-		server.startServer(app_settings.port)
-		.then(()=>run_console())
-		.catch(e=>{server_error(e);process.exit(0);});
+	if(app_args.run_server){
+		// RUN SERVER 
+		server.startServer(app_settings.port).catch(e=>{server_error(e);process.exit(0);});
+	}
+	else if(!app_args.operation){
+		// RUN CONSOLE
+		run_console().catch(e=>{server_error(e);process.exit(0);});
 	} 
 	else{
+		// RUN One time operation
 		run_operation(app_args);
 	}
 
