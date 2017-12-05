@@ -27,7 +27,7 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 		else return joinSettings(default_settings.site,site_settings);
 	})
 	else{ 
-		delete(default_settings.site.remote);//NO remote site as there is no site loaded
+		// delete(default_settings.site.remote);//NO remote site as there is no site loaded -> NA QUE VER PO
 		return Promise.resolve(default_settings.site);
 	}
 }
