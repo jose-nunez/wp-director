@@ -40,7 +40,7 @@ let getSettings = exports.getSettings = function(filename){
 	if(filename) return YAML.load(filename);
 }
 
-let getCmdArgs = exports.getCmdArgs = function(){	
+let getCmdArgs = exports.getCmdArgs = function(args){
 	let optionDefinitions = [
 		// Database
 		{ name: 'db_pass', alias: 'p', type: String },
@@ -54,5 +54,5 @@ let getCmdArgs = exports.getCmdArgs = function(){
 		{ name: 'restart_domain', alias: 'D', type: Boolean },
 	];
 
-	return commandLineArgs(optionDefinitions);
+	return commandLineArgs(optionDefinitions, args? {argv:args} : null);
 }

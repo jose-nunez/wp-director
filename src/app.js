@@ -101,7 +101,8 @@ function run_console(){
 			process.exit(0);
 		}
 		
-		console.log("You entered: " + data);
+		// console.log("You entered: " + data);
+		console.log("You entered: " , settings.getCmdArgs(data.split(' ')));
 		process.stdout.write('> ');
 	});
 }
