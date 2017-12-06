@@ -43,11 +43,11 @@ class FTP_API extends FileSystemAPI{
 		});
 	}
 
-	download_file(source,dest,noupdateuser) {
+	download_file(source,dest,owner) {
 		return this.connect()
 			.then((connector)=>this.get_file(connector,source))
 			.then((read)=>this.write_file(read,dest))
-			.then(()=>!noupdateuser?this.update_owner(dest):false);
+			.then(()=>this.update_owner(dest,owner));
 	}
 
 }

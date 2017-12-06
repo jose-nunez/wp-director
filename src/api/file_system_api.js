@@ -72,10 +72,10 @@ class FileSystemAPI extends SystemAPI{
 		return fse.copy(src,dest).then(()=>this.update_owner(dest));
 	}
 
-	download_file(url,dest,noupdateuser) {
+	download_file(url,dest,owner) {
 		return this.get_file(url)
 			.then((read)=>this.write_file(read,dest))
-			.then(()=>!noupdateuser?this.update_owner(dest):false);
+			.then(()=>this.update_owner(dest,owner));
 	}
 
 	replace_in_file(file,finds_replaces){
