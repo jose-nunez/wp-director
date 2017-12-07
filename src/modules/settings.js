@@ -46,7 +46,10 @@ let getCmdArgs = exports.getCmdArgs = function(args){
 		{ name: 'db_pass', alias: 'p', type: String },
 		{ name: 'db_name', alias: 'd', type: String },
 		{ name: 'db_user', alias: 'u', type: String },
-		
+		// FTP
+		{ name: 'ftp_user', alias: 'x', type: String },
+		{ name: 'ftp_host', alias: 'y', type: String },
+		{ name: 'ftp_pass', alias: 'z', type: String },
 		// run
 		{ name: 'operation', alias: 'o', type: String , defaultOption: true },
 		{ name: 'settings_file', alias: 'f', type: String },
