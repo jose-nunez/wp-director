@@ -26,10 +26,7 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 		if(!site_settings) throw new Error(`Site name ${site_name} not found in database`);
 		else return joinSettings(default_settings.site,site_settings);
 	})
-	else{ 
-		delete(default_settings.site.remote);//NO remote site as there is no site loaded
-		return Promise.resolve(default_settings.site);
-	}
+	else return Promise.resolve(default_settings.site);
 }
 
 /*let getSessionSettings = exports.getSessionSettings = function(){
@@ -40,19 +37,23 @@ let getSettings = exports.getSettings = function(filename){
 	if(filename) return YAML.load(filename);
 }
 
-let getCmdArgs = exports.getCmdArgs = function(){	
+let getCmdArgs = exports.getCmdArgs = function(args){
 	let optionDefinitions = [
 		// Database
 		{ name: 'db_pass', alias: 'p', type: String },
 		{ name: 'db_name', alias: 'd', type: String },
 		{ name: 'db_user', alias: 'u', type: String },
-		
+		// FTP
+		{ name: 'ftp_user', alias: 'x', type: String },
+		{ name: 'ftp_host', alias: 'y', type: String },
+		{ name: 'ftp_pass', alias: 'z', type: String },
 		// run
 		{ name: 'operation', alias: 'o', type: String , defaultOption: true },
-		{ name: 'settings', alias: 's', type: String },
+		{ name: 'settings_file', alias: 'f', type: String },
+		{ name: 'site_name', alias: 's', type: String },
 		{ name: 'restart_user', alias: 'U', type: Boolean },
 		{ name: 'restart_domain', alias: 'D', type: Boolean },
 	];
 
-	return commandLineArgs(optionDefinitions);
+	return commandLineArgs(optionDefinitions, args? {argv:args} : null);
 }

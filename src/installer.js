@@ -355,11 +355,11 @@ class Installer{
 			.then(()=>server_log('All backup files found in storage'));
 	}
 
-	download_files(download_method='get',backup_full_names){
+	download_files(download_method='get',backup_full_names,backup_owner){
 		let downloader = download_method=='ftp'? this.ftp_api : this.fs_api;
 		return this.fileproc(backup_full_names,({filename,remote_backup_filename,local_backup_filename})=>{
 			server_log('Downloading '+remote_backup_filename);
-			return downloader.download_file(remote_backup_filename,local_backup_filename,true).then(result=>server_log('Downloaded '+filename));
+			return downloader.download_file(remote_backup_filename,local_backup_filename,backup_owner).then(result=>server_log('Downloaded '+filename));
 		}).then(()=>server_log('All backup files downloaded'));
 	}
 	
@@ -395,7 +395,7 @@ class Installer{
 	}
 
 
-	get_backup_files(download_method,backup_full_names){
+	get_backup_files(download_method,backup_full_names,backup_owner){
 		return this.find_local_files(backup_full_names).then(()=>backup_full_names
 		/*{
 			if(this.cfg.force_download_backups){
@@ -407,7 +407,7 @@ class Installer{
 		)
 		.catch(e=>{
 			server_log('Downloading backups');
-			return this.download_files(download_method,backup_full_names);
+			return this.download_files(download_method,backup_full_names,backup_owner);
 		});
 	}
 
@@ -436,7 +436,8 @@ class Installer{
 
 		return this.create_user_backup_folder(cfg)
 			.then(()=>the_promise)
-			.then(backup_full_names=>this.get_backup_files(cfg.download_method,backup_full_names).then(backup_full_names=>backup_full_names));
+			.then(backup_full_names=>this.get_backup_files(cfg.download_method,backup_full_names,cfg.local.backup_dir_owner)
+			.then(backup_full_names=>backup_full_names));
 	}
 
 	full_site_backup_restore(cfg){
