@@ -6,7 +6,7 @@ const { db } = require('./modules/database');
 const server = require('./modules/server');
 
 
-function processSettings(sessionSettings,siteSettings,appSettings){
+function processSettings(sessionSettings,siteSettings,appSettings,app_args){
 	newSettings = settings.translateSettings(settings.joinSettings(siteSettings,sessionSettings));
 	delete(newSettings.local.subdomain);
 	delete(newSettings.local.subdomain_sufix);
@@ -25,18 +25,33 @@ function processSettings(sessionSettings,siteSettings,appSettings){
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
 
+
+	// COMMAND LINE ARGUMENTS___________
+
+	newSettings.restart_user = app_args.restart_user || newSettings.restart_user;
+	newSettings.restart_domain = app_args.restart_domain || newSettings.restart_domain;
+	
+	if((newSettings.remote && newSettings.remote.ftp) || app_args.ftp_user || app_args.ftp_host || app_args.ftp_pass){
+		if(!newSettings.remote) newSettings.remote = {};
+		if(!newSettings.remote.ftp) newSettings.remote.ftp = {};
+
+		newSettings.remote.ftp.user = app_args.ftp_user || newSettings.remote.ftp.user;
+		newSettings.remote.ftp.host = app_args.ftp_host || newSettings.remote.ftp.host;
+		newSettings.remote.ftp.password = app_args.ftp_pass || newSettings.remote.ftp.password;
+	}
+
 	return newSettings;
 }
 
-function getFileSettings(filename){
+function getSettingsFile(filename,app_args){
 	let sessionSettings = settings.getSettings(filename||'session.yml');
 	let appSettings = settings.getAppSettings();
 	return settings.getSiteSettings(sessionSettings.site_name)
-		.then(siteSettings=>processSettings(sessionSettings,siteSettings,appSettings));
+		.then(siteSettings=>processSettings(sessionSettings,siteSettings,appSettings,app_args));
 }
 
-function testSettings(){
-	return getFileSettings().then(newSet=>console.log(newSet));
+function testSettings(newSet){
+	return Promise.resolve(console.log(newSet));
 }
 function testOptions(app_args){
 	return Promise.resolve(console.log(app_args));
@@ -70,25 +85,21 @@ function runInstaller(operation,cfg){
 	return installer[run_op](cfg);
 }
 
-function run_file({settings_file,operation,restart_user,restart_domain}){
-	return getFileSettings(settings_file).then(newSet=>{
-		newSet.restart_user = restart_user;
-		newSet.restart_domain = restart_domain;
-		return runInstaller(operation,newSet);
-	});
-}
 
 function run_operation(app_args){
-	let fn;
-	switch (app_args.operation){
-		case 'to':	fn=testOptions(app_args);break;
-		case 'ts':	fn=testSettings();break;
-		case 'u':	fn=get_users();break;
-		case 's':	fn=get_sites();break;
-		case 'sf':	fn=get_sites(true);break;
-		default:	fn=run_file(app_args);
-	}
-	fn.catch(e=>server_error(e)).then(r=>process.exit(0));
+	getSettingsFile(app_args.settings_file,app_args).then(newSet=>{
+		let fn;
+		switch (app_args.operation){
+			case 'settings':	fn=testSettings(newSet);break;
+			case 'options':		fn=testOptions(app_args);break;
+			case 'users':		fn=get_users();break;
+			case 'sites':		fn=get_sites();break;
+			case 'sites-full':	fn=get_sites(true);break;
+			case 'domains':		fn=get_domains();break;
+			default:			fn=runInstaller(app_args.operation,newSet);
+		}
+		fn.catch(e=>server_error(e)).then(r=>process.exit(0));
+	});
 }
 
 function run_console(){
