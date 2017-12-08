@@ -26,10 +26,7 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 		if(!site_settings) throw new Error(`Site name ${site_name} not found in database`);
 		else return joinSettings(default_settings.site,site_settings);
 	})
-	else{ 
-		// delete(default_settings.site.remote);//NO remote site as there is no site loaded -> NA QUE VER PO
-		return Promise.resolve(default_settings.site);
-	}
+	else return Promise.resolve(default_settings.site);
 }
 
 /*let getSessionSettings = exports.getSessionSettings = function(){
@@ -53,9 +50,9 @@ let getCmdArgs = exports.getCmdArgs = function(args){
 		// run
 		{ name: 'operation', alias: 'o', type: String , defaultOption: true },
 		{ name: 'settings_file', alias: 'f', type: String },
+		{ name: 'site_name', alias: 's', type: String },
 		{ name: 'restart_user', alias: 'U', type: Boolean },
 		{ name: 'restart_domain', alias: 'D', type: Boolean },
-		{ name: 'run_server', alias: 's', type: Boolean },
 	];
 
 	return commandLineArgs(optionDefinitions, args? {argv:args} : null);

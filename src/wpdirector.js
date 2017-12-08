@@ -27,7 +27,6 @@ function processSettings(sessionSettings,siteSettings,appSettings,app_args){
 
 
 	// COMMAND LINE ARGUMENTS___________
-
 	newSettings.restart_user = app_args.restart_user || newSettings.restart_user;
 	newSettings.restart_domain = app_args.restart_domain || newSettings.restart_domain;
 	
@@ -46,7 +45,7 @@ function processSettings(sessionSettings,siteSettings,appSettings,app_args){
 function getSettingsFile(filename,app_args){
 	let sessionSettings = settings.getSettings(filename||'session.yml');
 	let appSettings = settings.getAppSettings();
-	return settings.getSiteSettings(sessionSettings.site_name)
+	return settings.getSiteSettings(app_args.site_name || sessionSettings.site_name)
 		.then(siteSettings=>processSettings(sessionSettings,siteSettings,appSettings,app_args));
 }
 
@@ -87,7 +86,7 @@ function runInstaller(operation,cfg){
 
 
 function run_operation(app_args){
-	getSettingsFile(app_args.settings_file,app_args).then(newSet=>{
+	return getSettingsFile(app_args.settings_file,app_args).then(newSet=>{
 		let fn;
 		switch (app_args.operation){
 			case 'settings':	fn=testSettings(newSet);break;
@@ -98,27 +97,36 @@ function run_operation(app_args){
 			case 'domains':		fn=get_domains();break;
 			default:			fn=runInstaller(app_args.operation,newSet);
 		}
-		fn.catch(e=>server_error(e)).then(r=>process.exit(0));
+		return fn;
 	});
 }
 
+// https://github.com/dthree/vorpal
 function run_console(){
 	console.log('\nPlease type a command (type exit to stop the app)');
-	process.stdout.write('> ');
+	let prompt = 'WPD > ';
+	process.stdout.write(prompt);
 	
 	let stdin = process.openStdin();
-	stdin.addListener("data", function(d) {
+
+	stdin.addListener("data", function(d){
 		let data = d.toString().trim(); 
-		if(data == 'exit'){
+		if(data == '') process.stdout.write(prompt);
+		else if(data == 'exit'){ 
 			console.log('Good bye');
 			process.exit(0);
 		}
-		// console.log("You entered: " + data);
-		console.log("You entered: " , settings.getCmdArgs(data.split(' ')));
-		process.stdout.write('> ');
+		else {
+			let cmdArgs = settings.getCmdArgs(data.split(' '));
+			run_operation(cmdArgs)
+			.catch(e=>server_error(e))
+			.then(()=>process.stdout.write(prompt));
+		}
 	});
+}
 
-	return Promise.resolve();
+function run_server(port){
+	return server.startServer(port);
 }
 
 function initApp(app_args,app_settings){
@@ -134,19 +142,10 @@ function initApp(app_args,app_settings){
 	let app_args = settings.getCmdArgs();
 	initApp(app_args,app_settings);
 	
-	console.log('################\nWelcome to WP Director\n################');
-
-	if(app_args.run_server){
-		// RUN SERVER 
-		server.startServer(app_settings.port).catch(e=>{server_error(e);process.exit(0);});
-	}
-	else if(!app_args.operation){
-		// RUN CONSOLE
-		run_console().catch(e=>{server_error(e);process.exit(0);});
-	} 
-	else{
-		// RUN One time operation
-		run_operation(app_args);
-	}
+	console.log('\n+++ Welcome to WP Director +++\n');
+	let run;
+	if(!app_args.operation) run = run_console();
+	else if(app_args.operation=='server') run = run_server(app_settings.port);
+	else run = run_operation(app_args).catch(e=>server_error(e)).then(r=>process.exit(0));
 
 })()
