@@ -51,14 +51,31 @@ class VestaAPI extends SystemAPI{
 				v_user_name=>this.sys_call('v-list-web-domains',v_user_name,'json')
 				.then(childProcess=>Object.keys(JSON.parse(childProcess.stdout)).map(domain=>({domain,user_name:v_user_name})));
 		
-		if(v_user_name) return list_domains(v_user_name);
-		else{
-			return this.get_users().then(users=>{
+		return this.get_users().then(users=>{
+			if(v_user_name && !users.includes(v_user_name)) return [];
+			else if(v_user_name) return list_domains(v_user_name);
+			else{
 				return Promise.all(users.map(user=>list_domains(user)))
 				.then(domains_arr=>domains_arr.reduce((accumulator, currentValue)=>accumulator.concat(currentValue),[]));
-			});
-		}
+			}
+		});
 	}
+
+	user_exists(v_user_name){
+		return this.get_users().then(users=>users.includes(v_user_name));
+	}
+
+	/*domain_exists(domain_name){
+		this.get_domains()
+	}*/
+
+	count_user_domains(v_user_name){
+		return this.get_users().then(users=>{
+			if(!users.includes(v_user_name)) return 0;
+			else return this.get_domains(v_user_name).then(domains=>domains.length);
+		});
+	}
+
 
 }
 
