@@ -1,5 +1,6 @@
 const settings = require('./modules/settings');
-const { server_log , printDate } = require('./modules/util.js');
+const { printDate } = require('./modules/util.js');
+const { server_log } = require('./modules/logger.js');
 const operator = require('./operator');
 
 const express = require('express');

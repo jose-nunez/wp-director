@@ -1,4 +1,4 @@
-const { server_log , server_log_ln , server_error } = require('./modules/util.js');
+const { server_log , server_log_ln , server_error } = require('./modules/logger.js');
 const settings = require('./modules/settings');
 const { db } = require('./modules/database');
 const server = require('./server');

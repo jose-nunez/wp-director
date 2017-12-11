@@ -1,25 +1,6 @@
 // const url = require('url');
 const path = require('path');
 
-let server_log = exports.server_log = function(...args){
-	process.stdout.write(printDate()+' ');
-	console.log.apply(null,args);
-}
-
-/*let server_log_ln = exports.server_log_ln = function(...args){
-	args.push('\n');
-	args.unshift('\n');
-	server_log.apply(null,args);
-}*/
-
-let server_error = exports.server_error = function(e){
-	process.stdout.write(printDate()+' ');
-	if(!e) console.error('Unknown Error');
-	console.log.apply(null,[`${e.name||''} ${e.message||''} ${e.stdout||''}`]);
-}
-
-
-
 let replaceAll = exports.replaceAll = function(text, busca, reemplaza ){
 	var recall = false;
 	var clave_aux= 'CLAVEUNICAMOMENTANEADELMOMENTOMOMENTUAL';
