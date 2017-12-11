@@ -1,5 +1,6 @@
 const settings = require('./modules/settings');
 const { run_operation } = require('./operator');
+const { server_log , server_error } = require('./modules/logger.js');
 
 // https://github.com/dthree/vorpal
 let run_console = exports.run_console = ()=>{

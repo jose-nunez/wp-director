@@ -1,4 +1,4 @@
-const { server_log , server_log_ln , server_error } = require('./modules/logger.js');
+const { server_log , server_error , init_log } = require('./modules/logger.js');
 const settings = require('./modules/settings');
 const { db } = require('./modules/database');
 const server = require('./server');
@@ -8,6 +8,9 @@ const { run_server } = require('./server');
 
 
 function initApp(app_args,app_settings){
+
+	init_log(true,true);
+
 	let dbconnection = app_settings.dbconnection;
 	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;
 	if(app_args.db_name) dbconnection.db_name = app_args.db_name;
