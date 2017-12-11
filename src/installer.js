@@ -99,7 +99,7 @@ class Installer{
 			server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain)
 				.then(()=>server_log('Created domain'))
-				.then(()=>{if(cfg.local.protocol && cfg.local.protocol=='https'){
+				.then(()=>{if(cfg.local.protocol=='https'){
 					server_log(`Adding SSL support for ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 					return this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain)
 					.then(()=>server_log('Added SSL support'));
@@ -385,7 +385,16 @@ class Installer{
 	full_site_init(cfg){
 		return this.vesta_api.user_exists(cfg.vesta.user_name)
 			.then(exists=>!exists? this.create_user(cfg) : (cfg.restart_user? this.restart_user(cfg) : true))
-			.then(()=>	( (cfg.restart_user || cfg.restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
+			.then(()=>this.vesta_api.domain_exists(cfg.local.domain,cfg.vesta.user_name))
+			.then(exists=>{
+				if(exists && !cfg.restart_domain) return this.clean_domain_dir(cfg);
+				else if(exists && cfg.restart_domain) return this.restart_domain(cfg);
+				else return this.vesta_api.domain_exists(cfg.local.domain)
+					.then(exists=>{
+						if(exists) throw new Error(`Domain ${cfg.local.domain} already exists for another user`);
+						else return this.create_domain(cfg);
+					})
+			})
 			.then(()=>	this.restart_database(cfg))
 		;
 	}

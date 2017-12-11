@@ -65,9 +65,9 @@ class VestaAPI extends SystemAPI{
 		return this.get_users().then(users=>users.includes(v_user_name));
 	}
 
-	/*domain_exists(domain_name){
-		this.get_domains()
-	}*/
+	domain_exists(domain_name,v_user_name){
+		return this.get_domains(v_user_name).then(domains=>domains.some(domain_obj=>domain_obj.domain==domain_name && (!v_user_name || domain_obj.user_name ==v_user_name)))
+	}
 
 	count_user_domains(v_user_name){
 		return this.get_users().then(users=>{
