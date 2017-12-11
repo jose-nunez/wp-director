@@ -73,11 +73,15 @@ function get_sites(fullconfig){
 function runInstaller(operation,cfg){
 	let run_op;
 	switch (operation){
-		case 'iwp': run_op='full_site_wp_install';break;
-		case 'ithemes': run_op='install_wp_themes';break;
-		case 'iplugins': run_op='install_wp_plugins';break;
+		case 'init' : run_op='full_site_init';break;
+		
+		case 'install-wordpress': run_op='full_site_wp_install';break;
+		case 'install-themes': run_op='install_wp_themes';break;
+		case 'install-plugins': run_op='install_wp_plugins';break;
+		
 		case 'restore': run_op='full_site_backup_restore';break;
 		case 'download-backups': run_op='download_backup_files';break;
+
 		default: throw new Error('Wrong operation');
 	}
 	let installer = new Installer(cfg);

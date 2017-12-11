@@ -44,8 +44,13 @@ class Installer{
 	delete_user(cfg){
 		return this.checkValues(cfg,['cfg.vesta.user_name'],`Can't delete user: Wrong parameters!`).then(()=>{
 			server_log(`Deleting user ${cfg.vesta.user_name}`);
-			return this.vesta_api.delete_user(cfg.vesta.user_name)
-			.then((result)=>server_log(`Deleted user ${cfg.vesta.user_name}`));
+			return this.vesta_api.get_domains(cfg.vesta.user_name).then(domains=>{
+				if( domains.length==0 || ( domains.length==1 && domains.some(domain_obj=>domain_obj.domain==cfg.local.domain) ) ){ 
+					return this.vesta_api.delete_user(cfg.vesta.user_name)
+					.then((result)=>server_log(`Deleted user ${cfg.vesta.user_name}`));
+				}
+				else throw new Error(`Can't delete user: there are active domains`);
+			});
 		});
 	}
 
@@ -53,7 +58,14 @@ class Installer{
 		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't create user: Wrong parameters!`).then(()=>{
 			server_log(`Creating user ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
-			.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
+				.then(()=>{
+					// Restarting APIS for new user
+					this.init_fs_api(cfg);
+					this.init_ftp_api(cfg);
+					this.init_wp_api(cfg);
+					this.init_database_api(cfg);
+				})
+				.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
 		});
 	}
 
@@ -67,15 +79,10 @@ class Installer{
 
 	restart_user(cfg){
 		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't restart user: Wrong parameters!`).then(()=>{
-			return 		this.delete_user(cfg).catch(err=>server_log(`User ${cfg.vesta.user_name} not deleted`)) //Skips deleting error
-			.then(()=>	this.create_user(cfg))
-			.then(()=>{
-				// Restarting APIS for new user
-				this.init_fs_api(cfg);
-				this.init_ftp_api(cfg);
-				this.init_wp_api(cfg);
-				this.init_database_api(cfg);
-			});
+			// server_log(`Restarting user ${cfg.vesta.user_name}`);
+			return this.vesta_api.user_exists(cfg.vesta.user_name)
+				.then(exists=>exists? this.delete_user(cfg) : true)
+				.then(()=>	this.create_user(cfg));
 		});
 	}
 
@@ -92,7 +99,7 @@ class Installer{
 			server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain)
 				.then(()=>server_log('Created domain'))
-				.then(()=>{if(cfg.local.protocol && cfg.local.protocol=='https'){
+				.then(()=>{if(cfg.local.protocol=='https'){
 					server_log(`Adding SSL support for ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 					return this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain)
 					.then(()=>server_log('Added SSL support'));
@@ -174,7 +181,7 @@ class Installer{
 	}
 
 	install_wp(cfg){ 
-		return this.checkValues(cfg,['cfg.local.domain','cfg.wordpress.title','cfg.wordpress.admin','cfg.wordpress.password','cfg.wordpress.email','cfg.wordpress.skip_email'],`Can't install wordpress: Wrong parameters!`).then(()=>{
+		return this.checkValues(cfg,['cfg.local.domain','cfg.wordpress.title','cfg.wordpress.admin'/*,'cfg.wordpress.password'*/,'cfg.wordpress.email','cfg.wordpress.skip_email'],`Can't install wordpress: Wrong parameters!`).then(()=>{
 			server_log(`Installing Wordpress: ${cfg.wordpress.title}`);
 			return this.wp_api.install(
 				cfg.local.domain,
@@ -376,8 +383,18 @@ class Installer{
 	******************************************/
 
 	full_site_init(cfg){
-		return 			(cfg.restart_user? this.restart_user(cfg) : Promise.resolve(true))
-			.then(()=>	( (cfg.restart_user || cfg.restart_domain )? this.restart_domain(cfg) : this.clean_domain_dir(cfg)))
+		return this.vesta_api.user_exists(cfg.vesta.user_name)
+			.then(exists=>!exists? this.create_user(cfg) : (cfg.restart_user? this.restart_user(cfg) : true))
+			.then(()=>this.vesta_api.domain_exists(cfg.local.domain,cfg.vesta.user_name))
+			.then(exists=>{
+				if(exists && !cfg.restart_domain) return this.clean_domain_dir(cfg);
+				else if(exists && cfg.restart_domain) return this.restart_domain(cfg);
+				else return this.vesta_api.domain_exists(cfg.local.domain)
+					.then(exists=>{
+						if(exists) throw new Error(`Domain ${cfg.local.domain} already exists for another user`);
+						else return this.create_domain(cfg);
+					})
+			})
 			.then(()=>	this.restart_database(cfg))
 		;
 	}

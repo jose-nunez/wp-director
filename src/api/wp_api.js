@@ -27,7 +27,7 @@ class WP_API extends SystemAPI{
 			`--url='${url}'`,
 			`--title='${title}'`,
 			`--admin_user='${admin_user}'`,
-			`--admin_password='${admin_password}'`,
+			admin_password? `--admin_password='${admin_password}'`:'',
 			`--admin_email='${admin_email}'`,
 			skip_email?`--skip-email`:'',
 			// skip_themes?`--skip-themes=all`:'',
