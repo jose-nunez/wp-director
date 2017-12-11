@@ -1,11 +1,11 @@
 
 const path = require('path');
-const { VestaAPI } = require('./api/vesta_api');
-const { WP_API } = require('./api/wp_api');
-const { FileSystemAPI } = require('./api/file_system_api');
-const { FTP_API } = require('./api/ftp_api');
-const { DataBaseAPI } = require('./api/data_base_api');
-const { server_log , urlOrigin , lPTrim , lWTrim , rPTrim , rWTrim , checkValues} = require('./modules/util.js');
+const { VestaAPI } = require('../api/vesta_api');
+const { WP_API } = require('../api/wp_api');
+const { FileSystemAPI } = require('../api/file_system_api');
+const { FTP_API } = require('../api/ftp_api');
+const { DataBaseAPI } = require('../api/data_base_api');
+const { server_log , urlOrigin , lPTrim , lWTrim , rPTrim , rWTrim , checkValues} = require('../modules/util.js');
 
 
 class Installer{
