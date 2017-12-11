@@ -6,11 +6,11 @@ let server_log = exports.server_log = function(...args){
 	console.log.apply(null,args);
 }
 
-let server_log_ln = exports.server_log_ln = function(...args){
+/*let server_log_ln = exports.server_log_ln = function(...args){
 	args.push('\n');
 	args.unshift('\n');
 	server_log.apply(null,args);
-}
+}*/
 
 let server_error = exports.server_error = function(e){
 	process.stdout.write(printDate()+' ');

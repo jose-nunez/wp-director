@@ -20,7 +20,7 @@ function initApp(app_args,app_settings){
 	let app_args = settings.getAppArgs();
 	initApp(app_args,app_settings);
 	
-	server_log_ln('++++++++ Welcome to WP Director ++++++++');
+	server_log('++++++++ Welcome to WP Director ++++++++');
 	let run;
 	if(!app_args.operation) run = run_console();
 	else if(app_args.operation=='server') run = run_server(app_settings.port);

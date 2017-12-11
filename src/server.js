@@ -16,14 +16,13 @@ function startServer(port,db){
 	let http_server = http.createServer(app);
 
 	// CROSS ORIGIN REQUESTS, SOLO TESTING
-	app.use(function(req, res, next) {
+	/*app.use(function(req, res, next) {
 		res.header("Access-Control-Allow-Origin", "*");
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 		next();
-	});
+	});*/
 	/*var cors = require('cors');
 	app.use(cors());*/
-
 
 	http_server.listen(port,function() {
 		server_log(`WP Director is listening at port: ${port}`);
@@ -55,19 +54,7 @@ function publishServices(app,db,io){
 		.then(set=>res.send(set))
 		.then(()=>server_log('Settings sent'));
 	})
-	/*.get('/appargs',function(req,res){
-		res.send(JSON.parse(require('fs').readFileSync(SERVER_PATH_LOCAL+'app_config.json', 'utf8')))
-	})
-	/*
-	.get('/i18n',function(req,res){
-		translate(res,req.query.lang);
-	})
-	.get('/get',function(req,res){
-		server_log('recibida solicitud. Last updated:'+req.query.lastUpdated);
-		get(req.query.type,req.query.lastUpdated).then(function(result){
-			res.send(result);
-		},handleError);
-	})
+/*
 	.get('/update',function(req,res){
 		var obj = JSON.parse(req.query.obj);
 		var id = obj.id;
