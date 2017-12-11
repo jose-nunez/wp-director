@@ -3,7 +3,11 @@ const express = require('express');
 const http = require("http");
 const sockets = require('socket.io');
 
-let startServer = exports.startServer = function(port,db){
+let run_server = exports.run_server = (port)=>{
+	return startServer(port);
+}
+
+function startServer(port,db){
 	let	app = express();
 	let http_server = http.createServer(app);
 

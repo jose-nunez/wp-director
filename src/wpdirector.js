@@ -3,35 +3,9 @@ const settings = require('./modules/settings');
 const { db } = require('./modules/database');
 const server = require('./server');
 const { run_operation } = require('./operator');
+const { run_console } = require('./console');
+const { run_server } = require('./server');
 
-
-// https://github.com/dthree/vorpal
-function run_console(){
-	console.log('\nPlease type a command (type exit to stop the app)');
-	let prompt = 'WPD > ';
-	process.stdout.write(prompt);
-	
-	let stdin = process.openStdin();
-
-	stdin.addListener("data", function(d){
-		let data = d.toString().trim(); 
-		if(data == '') process.stdout.write(prompt);
-		else if(data == 'exit'){ 
-			console.log('Good bye');
-			process.exit(0);
-		}
-		else {
-			let cmdArgs = settings.getAppArgs(data.split(' '));
-			run_operation(cmdArgs)
-			.catch(e=>server_error(e))
-			.then(()=>process.stdout.write(prompt));
-		}
-	});
-}
-
-function run_server(port){
-	return server.startServer(port);
-}
 
 function initApp(app_args,app_settings){
 	let dbconnection = app_settings.dbconnection;
