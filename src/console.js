@@ -1,3 +1,4 @@
+const settings = require('./modules/settings');
 const { run_operation } = require('./operator');
 
 // https://github.com/dthree/vorpal

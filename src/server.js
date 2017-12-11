@@ -1,7 +1,11 @@
+const settings = require('./modules/settings');
 const { server_log , printDate } = require('./modules/util.js');
+const operator = require('./operator');
+
 const express = require('express');
 const http = require("http");
 const sockets = require('socket.io');
+
 
 let run_server = exports.run_server = (port)=>{
 	return startServer(port);
@@ -32,16 +36,29 @@ function startServer(port,db){
 }
 
 
-
 function publishServices(app,db,io){
 	
 	app
 	.get('/',function(req,res){
 		res.send(`WP Director is running and listening<br/>${printDate()}`);
 	})
-	/*.get('/config',function(req,res){
+	.get('/args',function(req,res){
+		server_log('Getting app args');
+		let cmdArgs = settings.getAppArgs(req.query.appargs.split(' '));
+		res.send(cmdArgs);
+		server_log('App args sent');
+	})
+	.get('/settings',function(req,res){
+		server_log('Getting settings');
+		let cmdArgs = settings.getAppArgs(req.query.appargs.split(' '));
+		operator.get_settings(cmdArgs)
+		.then(set=>res.send(set))
+		.then(()=>server_log('Settings sent'));
+	})
+	/*.get('/appargs',function(req,res){
 		res.send(JSON.parse(require('fs').readFileSync(SERVER_PATH_LOCAL+'app_config.json', 'utf8')))
 	})
+	/*
 	.get('/i18n',function(req,res){
 		translate(res,req.query.lang);
 	})

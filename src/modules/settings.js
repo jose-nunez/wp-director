@@ -53,7 +53,7 @@ let getSiteSettings = exports.getSiteSettings = function(site_name){
 
 
 
-let processSettings = exports.processSettings = function(sessionSettings,siteSettings,appSettings,app_args){
+let processSettings = exports.processSettings = function(sessionSettings,siteSettings,appSettings,app_args,site_name){
 	newSettings = translateSettings(joinSettings(siteSettings,sessionSettings));
 	delete(newSettings.local.subdomain);
 	delete(newSettings.local.subdomain_sufix);
@@ -72,6 +72,7 @@ let processSettings = exports.processSettings = function(sessionSettings,siteSet
 	newSettings.local.database.password = 'algunawea';
 	newSettings.vesta.user_password = 'algunawea';
 
+	newSettings.site_name = site_name;
 
 	// COMMAND LINE ARGUMENTS___________
 	newSettings.restart_user = app_args.restart_user || newSettings.restart_user;
@@ -89,11 +90,10 @@ let processSettings = exports.processSettings = function(sessionSettings,siteSet
 	return newSettings;
 }
 
-let getSettings = exports.getSettings = function(filename){
-	let app_args = getAppArgs();
+let getSettings = exports.getSettings = function(app_args){
 	let appSettings = getAppSettings();
-	let sessionSettings = YAML.load(filename||'session.yml');
-
-	return getSiteSettings(app_args.site_name || sessionSettings.site_name)
-		.then(siteSettings=>processSettings(sessionSettings,siteSettings,appSettings,app_args));
+	let sessionSettings = YAML.load(app_args.settings_file ||'session.yml');
+	let site = app_args.site_name || sessionSettings.site_name;
+	return getSiteSettings(site)
+		.then(siteSettings=>processSettings(sessionSettings,siteSettings,appSettings,app_args,site));
 }

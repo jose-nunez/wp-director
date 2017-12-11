@@ -22,10 +22,12 @@ function runInstaller(operation,cfg){
 
 function testSettings(newSet){
 	return Promise.resolve(console.log(newSet));
+	// return Promise.resolve(newSet);
 }
 function testOptions(app_args){
 	return Promise.resolve(console.log(app_args));
 }
+
 
 function get_domains(){
 	let vesta_api = new VestaAPI();
@@ -42,7 +44,7 @@ function get_sites(fullconfig){
 
 
 let run_operation = exports.run_operation = (app_args)=>{
-	return settings.getSettings(app_args.settings_file,app_args).then(newSet=>{
+	return settings.getSettings(app_args).then(newSet=>{
 		let fn;
 		switch (app_args.operation){
 			case 'settings':	fn=testSettings(newSet);break;
@@ -57,3 +59,6 @@ let run_operation = exports.run_operation = (app_args)=>{
 	});
 }
 
+let get_settings = exports.get_settings = (app_args)=>{
+	return settings.getSettings(app_args);
+}
