@@ -7,8 +7,7 @@ function file_log(...args){
 }
 
 function console_log(...args){
-	process.stdout.write(printDate()+' ');
-	console.log.apply(null,args);
+	console.log(...args);
 }
 
 let init_log = exports.init_log = (log_file,log_console)=>{
@@ -21,7 +20,7 @@ let attach_log_function = exports.attach_log_function = (fn)=>{
 }
 
 let server_log = exports.server_log = function(...args){
-	logs.map(fn=>fn.apply(null,args));
+	logs.map(fn=>fn.apply(null,[printDate(),...args]));
 }
 
 let server_error = exports.server_error = function(e){

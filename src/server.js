@@ -1,6 +1,6 @@
 const settings = require('./modules/settings');
 const { printDate } = require('./modules/util.js');
-const { server_log } = require('./modules/logger.js');
+const { server_log , attach_log_function } = require('./modules/logger.js');
 const operator = require('./operator');
 
 const express = require('express');
@@ -35,11 +35,11 @@ function startServer(port,db){
 	return Promise.resolve();
 }
 
-
 function publishServices(app,db,io){
 	
 	app
 	.get('/',function(req,res){
+		server_log('Empty call');
 		res.send(`WP Director is running and listening<br/>${printDate()}`);
 	})
 	.get('/args',function(req,res){
@@ -71,10 +71,34 @@ function publishServices(app,db,io){
 }
 
 
+let buffer = [];
+function init_server_log(socket){
+	attach_log_function((...args)=>process_log(socket,...args));
+}
+
+function process_log(socket,...args){
+	let arg = args.join(' ');
+	buffer.push(args);
+	socket.emit('serverlog',arg);
+}
+
+function full_process_log(socket){
+	buffer.map(arg=>socket.emit('serverlog',arg));
+}
+function empty_buffer(){
+	buffer = [];
+}
+
 function openSockets(http_server,db){
 	const io = sockets(http_server);
-
-	/*io.on('connection', function(socket){
+	io.on('connection', function(socket){
+		init_server_log(socket);
+		
+		process_log(socket,'Hi there!');
+		full_process_log(socket);
+	});
+	/*
+	io.on('connection', function(socket){
 		server_log('conexion establecida.');
 
 		socket.on('disconnect', function(){
@@ -96,7 +120,8 @@ function openSockets(http_server,db){
 				io.emit('datasent',result);
 			},handleError);
 		});
-	});*/
+	});
+	*/
 
 	return io;
 }
