@@ -1,6 +1,6 @@
 const settings = require('./modules/settings');
 const { printDate } = require('./modules/util.js');
-const { server_log , attach_log_function } = require('./modules/logger.js');
+const { server_log , process_log , attach_process_log_function } = require('./modules/logger.js');
 const operator = require('./operator');
 
 const express = require('express');
@@ -72,14 +72,14 @@ function publishServices(app,db,io){
 
 
 let buffer = [];
-function init_server_log(socket){
-	attach_log_function((...args)=>process_log(socket,...args));
+function my_process_log(io,...args){
+	let arg = args.join(' ');
+	buffer.push(arg);
+	io.emit('serverlog',arg);
 }
 
-function process_log(socket,...args){
-	let arg = args.join(' ');
-	buffer.push(args);
-	socket.emit('serverlog',arg);
+function init_server_log(io){
+	attach_process_log_function((...args)=>my_process_log(io,...args));
 }
 
 function full_process_log(socket){
@@ -91,19 +91,17 @@ function empty_buffer(){
 
 function openSockets(http_server,db){
 	const io = sockets(http_server);
+	init_server_log(io);
+	server_log('Waiting for connections');
 	io.on('connection', function(socket){
-		init_server_log(socket);
-		
-		process_log(socket,'Hi there!');
+		server_log('Connection stablished');
 		full_process_log(socket);
+		socket.on('disconnect',()=>server_log('Connection lost'));
 	});
 	/*
 	io.on('connection', function(socket){
 		server_log('conexion establecida.');
 
-		socket.on('disconnect', function(){
-			server_log('conexión cerrada');
-		});
 
 		socket.on('get', function(params){
 			server_log('recibida solicitud. Last updated:'+params.lastUpdated);
@@ -125,7 +123,6 @@ function openSockets(http_server,db){
 
 	return io;
 }
-
 
 function get(type,lastUpdated){
 	// UNA CHUCHUFLETA DEL PORTE DE UN BUQUE

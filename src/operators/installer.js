@@ -5,7 +5,7 @@ const { WP_API } = require('../api/wp_api');
 const { FileSystemAPI } = require('../api/file_system_api');
 const { FTP_API } = require('../api/ftp_api');
 const { DataBaseAPI } = require('../api/data_base_api');
-const { server_log } = require('../modules/logger.js');
+const { process_log } = require('../modules/logger.js');
 const { urlOrigin , lPTrim , lWTrim , rPTrim , rWTrim , checkValues} = require('../modules/util.js');
 
 
@@ -44,11 +44,11 @@ class Installer{
 
 	delete_user(cfg){
 		return this.checkValues(cfg,['cfg.vesta.user_name'],`Can't delete user: Wrong parameters!`).then(()=>{
-			server_log(`Deleting user ${cfg.vesta.user_name}`);
+			process_log(`Deleting user ${cfg.vesta.user_name}`);
 			return this.vesta_api.get_domains(cfg.vesta.user_name).then(domains=>{
 				if( domains.length==0 || ( domains.length==1 && domains.some(domain_obj=>domain_obj.domain==cfg.local.domain) ) ){ 
 					return this.vesta_api.delete_user(cfg.vesta.user_name)
-					.then((result)=>server_log(`Deleted user ${cfg.vesta.user_name}`));
+					.then((result)=>process_log(`Deleted user ${cfg.vesta.user_name}`));
 				}
 				else throw new Error(`Can't delete user: there are active domains`);
 			});
@@ -57,7 +57,7 @@ class Installer{
 
 	create_user(cfg){
 		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't create user: Wrong parameters!`).then(()=>{
-			server_log(`Creating user ${cfg.vesta.user_name}`);
+			process_log(`Creating user ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_user(cfg.vesta.user_name,cfg.vesta.user_password,cfg.vesta.user_email)
 				.then(()=>{
 					// Restarting APIS for new user
@@ -66,21 +66,21 @@ class Installer{
 					this.init_wp_api(cfg);
 					this.init_database_api(cfg);
 				})
-				.then((result)=>server_log(`Created user ${cfg.vesta.user_name}`));
+				.then((result)=>process_log(`Created user ${cfg.vesta.user_name}`));
 		});
 	}
 
 	create_user_backup_folder(cfg){
 		return this.checkValues(cfg,['cfg.local.backup_dir'],`Can't create user backup folder: Wrong parameters!`).then(()=>{
-			server_log(`Creating user backup folder ${cfg.local.backup_dir}`);
+			process_log(`Creating user backup folder ${cfg.local.backup_dir}`);
 			return this.fs_api.create_dir(cfg.local.backup_dir,cfg.local.backup_dir_owner)
-			.then(()=>server_log(`Created user backup folder ${cfg.local.backup_dir}`));
+			.then(()=>process_log(`Created user backup folder ${cfg.local.backup_dir}`));
 		});
 	}
 
 	restart_user(cfg){
 		return this.checkValues(cfg,['cfg.vesta.user_password','cfg.vesta.user_email','cfg.vesta.user_name'],`Can't restart user: Wrong parameters!`).then(()=>{
-			// server_log(`Restarting user ${cfg.vesta.user_name}`);
+			// process_log(`Restarting user ${cfg.vesta.user_name}`);
 			return this.vesta_api.user_exists(cfg.vesta.user_name)
 				.then(exists=>exists? this.delete_user(cfg) : true)
 				.then(()=>	this.create_user(cfg));
@@ -89,21 +89,21 @@ class Installer{
 
 	remove_domain(cfg){ 
 		return this.checkValues(cfg,['cfg.local.domain','cfg.vesta.user_name'],`Can't remove domain: Wrong parameters!`).then(()=>{
-			server_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+			process_log(`Removing domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.remove_domain(cfg.vesta.user_name,cfg.local.domain)
-			.then(()=>server_log(`Removed domain ${cfg.local.domain}`)); 
+			.then(()=>process_log(`Removed domain ${cfg.local.domain}`)); 
 		});
 	}
 
 	create_domain(cfg){ 
 		return this.checkValues(cfg,['cfg.local.domain','cfg.vesta.user_name'],`Can't remove domain: Wrong parameters!`).then(()=>{
-			server_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+			process_log(`Creating domain ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_domain(cfg.vesta.user_name,cfg.local.domain)
-				.then(()=>server_log('Created domain'))
+				.then(()=>process_log('Created domain'))
 				.then(()=>{if(cfg.local.protocol=='https'){
-					server_log(`Adding SSL support for ${cfg.local.domain} for ${cfg.vesta.user_name}`);
+					process_log(`Adding SSL support for ${cfg.local.domain} for ${cfg.vesta.user_name}`);
 					return this.vesta_api.add_letsencrypt(cfg.vesta.user_name,cfg.local.domain)
-					.then(()=>server_log('Added SSL support'));
+					.then(()=>process_log('Added SSL support'));
 				}});
 		});
 	}
@@ -117,35 +117,35 @@ class Installer{
 
 	clean_domain_dir(cfg){
 		return this.checkValues(cfg,['cfg.local.path','cfg.robots_template'],`Can't clean folder: Wrong parameters!`).then(()=>{
-			server_log(`Cleaning folder ${cfg.local.path}`);
+			process_log(`Cleaning folder ${cfg.local.path}`);
 			let robots_src  = cfg.robots_template;
 			let robots_dst  = path.join(cfg.local.path,path.basename(robots_src));
 			return 		this.fs_api.delete_folder(cfg.local.path,true)
 			.then(()=>	this.fs_api.create_dir(cfg.local.path))
 			.then(()=>	this.fs_api.copy_file(robots_src,robots_dst))
-			.then(()=>server_log(`Folder ${cfg.local.path} cleaned`));
+			.then(()=>process_log(`Folder ${cfg.local.path} cleaned`));
 		});
 	}
 
 	remove_database(cfg){ 
 		return this.checkValues(cfg,['cfg.local.database.name','cfg.vesta.user_name'],`Can't remove database: Wrong parameters!`).then(()=>{
-			server_log(`Removing database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
+			process_log(`Removing database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.remove_database(cfg.vesta.user_name,cfg.local.database.name)
-			.then((result)=>server_log('Removed database')); 
+			.then((result)=>process_log('Removed database')); 
 		});
 	}
 
 	create_database(cfg){ 
 		return this.checkValues(cfg,['cfg.local.database.name','cfg.vesta.user_name','cfg.local.database.name_sufix','cfg.local.database.user_sufix','cfg.local.database.password'],`Can't create database: Wrong parameters!`).then(()=>{
-			server_log(`Creating database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
+			process_log(`Creating database ${cfg.local.database.name} for ${cfg.vesta.user_name}`);
 			return this.vesta_api.create_database(cfg.vesta.user_name,cfg.local.database.name_sufix,cfg.local.database.user_sufix,cfg.local.database.password)
-			.then((result)=>server_log('Created database')); 
+			.then((result)=>process_log('Created database')); 
 		});
 	}
 
 	restart_database(cfg){
 		return this.checkValues(cfg,['cfg.local.database.name','cfg.vesta.user_name','cfg.local.database.name_sufix','cfg.local.database.user_sufix','cfg.local.database.password'],`Can't restart database: Wrong parameters!`).then(()=>{
-			return 		this.remove_database(cfg).catch(err=>server_log(`Database ${cfg.local.database.name} not deleted`))
+			return 		this.remove_database(cfg).catch(err=>process_log(`Database ${cfg.local.database.name} not deleted`))
 			.then(()=>	this.create_database(cfg));
 		});
 	}
@@ -155,35 +155,35 @@ class Installer{
 	******************************************/
 
 	download_wp(){ 
-		server_log(`Downloading Wordpress`);
+		process_log(`Downloading Wordpress`);
 		return this.wp_api.download()
-		.then((result)=>server_log(result.stdout));
+		.then((result)=>process_log(result.stdout));
 	}
 
 	config_wp(cfg){
 		return this.checkValues(cfg,['cfg.local.database.name','cfg.local.database.user','cfg.local.database.password'],`Can't restart database: Wrong parameters!`).then(()=>{
-			server_log(`Auto generate wp-config.php`);
+			process_log(`Auto generate wp-config.php`);
 			return this.wp_api.config(cfg.local.database.name,cfg.local.database.user,cfg.local.database.password)
-			.then((result)=>server_log(result.stdout)); 
+			.then((result)=>process_log(result.stdout)); 
 		});
 	}
 	
 	// https://regex101.com/r/pitmX3/1
 	config_wp_manually(cfg){
 		return this.checkValues(cfg,['cfg.local.path','cfg.local.database.name','cfg.local.database.user','cfg.local.database.password'],`Can't manually generate wp-config.php: Wrong parameters!`).then(()=>{
-			server_log(`Manual generate wp-config.php`);
+			process_log(`Manual generate wp-config.php`);
 			let wpconfig = path.join(cfg.local.path , 'wp-config.php');
 			return this.fs_api.replace_in_file(wpconfig,[
 				{find:/define\s*?\(\s*?('|")DB_NAME('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_NAME','${cfg.local.database.name}');`},
 				{find:/define\s*?\(\s*?('|")DB_USER('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_USER','${cfg.local.database.user}');`},
 				{find:/define\s*?\(\s*?('|")DB_PASSWORD('|")\s*?,\s*?('|").*?('|")\s*?\)\s*?;/g,replace:`define('DB_PASSWORD','${cfg.local.database.password}');`},
-			]).then(()=>server_log('wp-config.php generated succesfully'));
+			]).then(()=>process_log('wp-config.php generated succesfully'));
 		});
 	}
 
 	install_wp(cfg){ 
 		return this.checkValues(cfg,['cfg.local.domain','cfg.wordpress.title','cfg.wordpress.admin'/*,'cfg.wordpress.password'*/,'cfg.wordpress.email','cfg.wordpress.skip_email'],`Can't install wordpress: Wrong parameters!`).then(()=>{
-			server_log(`Installing Wordpress: ${cfg.wordpress.title}`);
+			process_log(`Installing Wordpress: ${cfg.wordpress.title}`);
 			return this.wp_api.install(
 				cfg.local.domain,
 				cfg.wordpress.title,
@@ -192,36 +192,36 @@ class Installer{
 				cfg.wordpress.email,
 				cfg.wordpress.skip_email
 			)
-			.then(r=>server_log(r.stdout)); 
+			.then(r=>process_log(r.stdout)); 
 		});
 	}
 
 	install_wp_themes(cfg){ 
-		server_log(`Installing Themes`);
+		process_log(`Installing Themes`);
 		if(cfg && cfg.wordpress && cfg.wordpress.themes && cfg.wordpress.themes instanceof Array){
 			return Promise.all(cfg.wordpress.themes.map(theme=>(
 				this.wp_api.install_theme(theme[0],theme[1])
-				.then(r=>server_log(r.stdout))
+				.then(r=>process_log(r.stdout))
 			)))
-			.then(r=>server_log('All themes installed'));
+			.then(r=>process_log('All themes installed'));
 		}
 		else {
-			server_log('No themes to install');
+			process_log('No themes to install');
 			return Promise.resolve();
 		}
 	}
 
 	install_wp_plugins(cfg){ 
-		server_log(`Installing Plugins`);
+		process_log(`Installing Plugins`);
 		if(cfg && cfg.wordpress && cfg.wordpress.plugins && cfg.wordpress.plugins instanceof Array){
 			return Promise.all(cfg.wordpress.plugins.map(plugin=>(
 				this.wp_api.install_plugin(plugin[0],plugin[1])
-				.then(r=>server_log(r.stdout))
+				.then(r=>process_log(r.stdout))
 			)))
-			.then(r=>server_log('All plugins installed'));
+			.then(r=>process_log('All plugins installed'));
 		}
 		else{ 
-			server_log('No plugins to install');
+			process_log('No plugins to install');
 			return Promise.resolve();
 		}
 	}
@@ -237,7 +237,7 @@ class Installer{
 			{find:/\$GLOBALS\[\'FW_DBPASS\'\]\s*?=\s*?\'\';/,replace:`$GLOBALS['FW_DBPASS'] = '${cfg.local.database.password}';`},
 			{find:/\$GLOBALS\[\'CURRENT_ROOT_PATH\'\]\s*?=\s*?dirname\(__FILE__\);/,replace:`$GLOBALS['CURRENT_ROOT_PATH'] = "${cfg.local.path}";`},
 			{find:'<input id="accept-warnings" name="accpet-warnings"',replace:'<input id="accept-warnings" name="accpet-warnings" checked="checked"'},
-		]).then(()=>server_log('Duplicator Installer configured'))
+		]).then(()=>process_log('Duplicator Installer configured'))
 	}
 	
 	get_duplicator_names(cfg){
@@ -281,33 +281,33 @@ class Installer{
 	}
 
 	unzip_migratedb_files(cfg,{multipart_support}){
-		server_log(`Extracting ${cfg.remote.backup_files}`);
+		process_log(`Extracting ${cfg.remote.backup_files}`);
 		return this.fs_api.decompress(
 				path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_files)),
 				path.dirname(cfg.local.path),
 				multipart_support
 		)
-		.then(server_log(`Extracted ${cfg.remote.backup_files}`));
+		.then(process_log(`Extracted ${cfg.remote.backup_files}`));
 	}
 
 	migratedb_replace_domain(cfg){ 
-		server_log('Replacing domain name in database');
+		process_log('Replacing domain name in database');
 		return this.wp_api.migratedb_find_replace(rWTrim(cfg.remote.domain).replace(/https{0,1}:\/\//,''),rWTrim(cfg.local.domain).replace(/https{0,1}:\/\//,''))
-			.then(()=>server_log('Replaced domain name in database')); 
+			.then(()=>process_log('Replaced domain name in database')); 
 	}
 	migratedb_replace_path(cfg){ 
-		server_log(`Replacing path name in database`);
+		process_log(`Replacing path name in database`);
 		return this.wp_api.migratedb_find_replace(
 				rPTrim(cfg.remote.path),
 				rPTrim(cfg.local.path)
 			)
-			.then(()=>server_log('Replaced path name in database')); 
+			.then(()=>process_log('Replaced path name in database')); 
 	}
 
 	install_migratedb_database(cfg){
-		server_log(`Running script ${cfg.remote.backup_database}`);
+		process_log(`Running script ${cfg.remote.backup_database}`);
 		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
-		.then(()=>	server_log(`Script ${cfg.remote.backup_database} executed`))
+		.then(()=>	process_log(`Script ${cfg.remote.backup_database} executed`))
 		.then(()=>	this.migratedb_replace_domain(cfg))
 		.then(()=>	this.migratedb_replace_path(cfg))
 		;
@@ -355,28 +355,28 @@ class Installer{
 
 	delete_local_files(backup_full_names){
 		return this.fileproc(backup_full_names, ({local_backup_filename}) => this.fs_api.delete_file(local_backup_filename) )
-			.then(()=>server_log('All backup files deleted'));
+			.then(()=>process_log('All backup files deleted'));
 	}
 
 	find_local_files(backup_full_names){
 		return this.fileproc(backup_full_names, ({local_backup_filename}) => this.fs_api.read_file(local_backup_filename) )
-			.then(()=>server_log('All backup files found in storage'));
+			.then(()=>process_log('All backup files found in storage'));
 	}
 
 	download_files(download_method='get',backup_full_names,backup_owner){
 		let downloader = download_method=='ftp'? this.ftp_api : this.fs_api;
 		return this.fileproc(backup_full_names,({filename,remote_backup_filename,local_backup_filename})=>{
-			server_log('Downloading '+remote_backup_filename);
-			return downloader.download_file(remote_backup_filename,local_backup_filename,backup_owner).then(result=>server_log('Downloaded '+filename));
-		}).then(()=>server_log('All backup files downloaded'));
+			process_log('Downloading '+remote_backup_filename);
+			return downloader.download_file(remote_backup_filename,local_backup_filename,backup_owner).then(result=>process_log('Downloaded '+filename));
+		}).then(()=>process_log('All backup files downloaded'));
 	}
 	
 	transfer_files(backup_full_names){
 		return this.fileproc(backup_full_names,({filename,local_backup_filename,installation_filename})=>{
-			server_log('Copying '+filename);
+			process_log('Copying '+filename);
 			return this.ftp_api.copy_file(local_backup_filename,installation_filename)
-				.then(result=>server_log('Copied '+filename))
-		}).then(()=>server_log('All backup files transfered'));
+				.then(result=>process_log('Copied '+filename))
+		}).then(()=>process_log('All backup files transfered'));
 	}
 
 	/******************************************
@@ -417,14 +417,14 @@ class Installer{
 		return this.find_local_files(backup_full_names).then(()=>backup_full_names
 		/*{
 			if(this.cfg.force_download_backups){
-				server_log('Forcing download');
+				process_log('Forcing download');
 				return 			this.delete_local_files(backup_full_names).catch(e=>{})
 					.then(()=>	this.download_files(download_method,backup_full_names));
 			}
 		}*/
 		)
 		.catch(e=>{
-			server_log('Downloading backups');
+			process_log('Downloading backups');
 			return this.download_files(download_method,backup_full_names,backup_owner);
 		});
 	}
