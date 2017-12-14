@@ -29,10 +29,15 @@ function testOptions(app_args){
 }
 
 
-function get_domains(){
+function get_domains(user_name){
 	let vesta_api = new VestaAPI();
-	return vesta_api.get_domains().then(domains=>console.log(domains));
+	return vesta_api.get_domains(user_name).then(domains=>console.log(domains));
 }
+
+function get_all_domains(){
+	return get_domains();
+}
+
 function get_users(){
 	let vesta_api = new VestaAPI();
 	return vesta_api.get_users().then(users=>console.log(users));
@@ -52,7 +57,8 @@ let run_operation = exports.run_operation = (app_args)=>{
 			case 'users':		fn=get_users();break;
 			case 'sites':		fn=get_sites();break;
 			case 'sites-full':	fn=get_sites(true);break;
-			case 'domains':		fn=get_domains();break;
+			case 'domains':		fn=get_domains(newSet.vesta.user_name);break;
+			case 'all-domains':	fn=get_all_domains();break;
 			default:			fn=runInstaller(app_args.operation,newSet);
 		}
 		return fn;
