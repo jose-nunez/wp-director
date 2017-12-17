@@ -1,21 +1,29 @@
-const { server_log , printDate } = require('./util.js');
+const settings = require('./modules/settings');
+const { printDate } = require('./modules/util.js');
+const { server_log , process_log , attach_process_log_function } = require('./modules/logger.js');
+const operator = require('./operator');
+
 const express = require('express');
 const http = require("http");
 const sockets = require('socket.io');
 
-let startServer = exports.startServer = function(port,db){
+
+let run_server = exports.run_server = (port)=>{
+	return startServer(port);
+}
+
+function startServer(port,db){
 	let	app = express();
 	let http_server = http.createServer(app);
 
 	// CROSS ORIGIN REQUESTS, SOLO TESTING
-	app.use(function(req, res, next) {
+	/*app.use(function(req, res, next) {
 		res.header("Access-Control-Allow-Origin", "*");
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 		next();
-	});
+	});*/
 	/*var cors = require('cors');
 	app.use(cors());*/
-
 
 	http_server.listen(port,function() {
 		server_log(`WP Director is listening at port: ${port}`);
@@ -27,26 +35,27 @@ let startServer = exports.startServer = function(port,db){
 	return Promise.resolve();
 }
 
-
-
 function publishServices(app,db,io){
 	
 	app
 	.get('/',function(req,res){
+		server_log('Empty call');
 		res.send(`WP Director is running and listening<br/>${printDate()}`);
 	})
-	/*.get('/config',function(req,res){
-		res.send(JSON.parse(require('fs').readFileSync(SERVER_PATH_LOCAL+'app_config.json', 'utf8')))
+	.get('/args',function(req,res){
+		server_log('Getting app args');
+		let cmdArgs = settings.getAppArgs(req.query.appargs.split(' '));
+		res.send(cmdArgs);
+		server_log('App args sent');
 	})
-	.get('/i18n',function(req,res){
-		translate(res,req.query.lang);
+	.get('/settings',function(req,res){
+		server_log('Getting settings');
+		let cmdArgs = settings.getAppArgs(req.query.appargs.split(' '));
+		operator.get_settings(cmdArgs)
+		.then(set=>res.send(set))
+		.then(()=>server_log('Settings sent'));
 	})
-	.get('/get',function(req,res){
-		server_log('recibida solicitud. Last updated:'+req.query.lastUpdated);
-		get(req.query.type,req.query.lastUpdated).then(function(result){
-			res.send(result);
-		},handleError);
-	})
+/*
 	.get('/update',function(req,res){
 		var obj = JSON.parse(req.query.obj);
 		var id = obj.id;
@@ -62,15 +71,37 @@ function publishServices(app,db,io){
 }
 
 
+let buffer = [];
+function my_process_log(io,...args){
+	let arg = args.join(' ');
+	buffer.push(arg);
+	io.emit('serverlog',arg);
+}
+
+function init_server_log(io){
+	attach_process_log_function((...args)=>my_process_log(io,...args));
+}
+
+function full_process_log(socket){
+	buffer.map(arg=>socket.emit('serverlog',arg));
+}
+function empty_buffer(){
+	buffer = [];
+}
+
 function openSockets(http_server,db){
 	const io = sockets(http_server);
-
-	/*io.on('connection', function(socket){
+	init_server_log(io);
+	server_log('Waiting for connections');
+	io.on('connection', function(socket){
+		server_log('Connection stablished');
+		full_process_log(socket);
+		socket.on('disconnect',()=>server_log('Connection lost'));
+	});
+	/*
+	io.on('connection', function(socket){
 		server_log('conexion establecida.');
 
-		socket.on('disconnect', function(){
-			server_log('conexión cerrada');
-		});
 
 		socket.on('get', function(params){
 			server_log('recibida solicitud. Last updated:'+params.lastUpdated);
@@ -87,11 +118,11 @@ function openSockets(http_server,db){
 				io.emit('datasent',result);
 			},handleError);
 		});
-	});*/
+	});
+	*/
 
 	return io;
 }
-
 
 function get(type,lastUpdated){
 	// UNA CHUCHUFLETA DEL PORTE DE UN BUQUE
