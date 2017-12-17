@@ -1,0 +1,21 @@
+# Validate here 
+#http://nodeca.github.io/js-yaml/
+
+site_name: my_stored_settings 
+
+vesta:
+  user_name: my_vesta_user_name # required if no site is loaded or wants to change to another
+
+local:
+  # subdomain_sufix: -2
+  # subdomain: mysite #required if no site is loaded | optional if site_name and subdomain_sufix are set
+  domain: mysite-2.myhost.com #required if no site is loaded | optional if site_name and subdomain_sufix are set
+
+wordpress:
+  title: Test domain
+  # password: 
+  themes: 
+    - ${wordpress.prebuilds_themes_path}/my-custom-theme.zip
+    - ${wordpress.prebuilds_themes_path}/my-custom-child-theme.zip|true
+  plugins:
+    - ${wordpress.prebuilds_plugins_path}/my-custom-plugin|true

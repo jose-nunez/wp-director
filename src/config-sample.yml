@@ -1,0 +1,54 @@
+# Validate here http://nodeca.github.io/js-yaml/
+
+# ____________________________
+# Site options. Session and Database values will override these ones
+# ____________________________
+site:
+  vesta:
+    user_email: myemail@myhost.com
+
+  restore_mode: manual
+  download_method: get
+
+  local:
+    subdomain: ${vesta.user_name}
+    domain: ${local.subdomain}${local.subdomain_sufix}.myhost.com
+    path: /home/${vesta.user_name}/web/${local.domain}/public_html
+    backup_dir_owner: admin # optional
+    backup_dir: /home/${local.backup_dir_owner}/backups/${remote.domain}/
+    database:
+      name_sufix: db${local.subdomain_sufix}
+      user_sufix: us${local.subdomain_sufix}
+      user: ${vesta.user_name}_${local.database.user_sufix}
+      name: ${vesta.user_name}_${local.database.name_sufix}
+    protocol: https
+  
+  remote:
+    path: "/home/${remote.user_name}/web/${local.domain}/public_html" # To be replaced on the database
+    ftp:
+      user: ${remote.user_name}
+      host: ftp.myhost.com
+    
+    #backups_folder: / #optional. Set this depennding on download method (FTP or HTTP).
+    backup_files: ${remote.user_name}.zip
+    backup_database: ${remote.user_name}.sql.gz
+    duplicator_backups_folder: /public_html/wp-snapshots #optional
+  
+  wordpress:
+    admin: admin_user_name
+    password: optional!!
+    email: ${vesta.user_email}
+    skip_email: true
+    prebuilds_themes_path: /path/to/themes
+    prebuilds_plugins_path: /path/to/plugins
+
+# ____________________________
+# App options.
+# ____________________________
+app:
+  port: 23164 #WPD =>23 16 4
+  dbconnection:
+    db_name: db_name
+    db_user: db_user
+  robots_template: /usr/local/vesta/data/templates/web/skel/public_html/robots.txt # If necessary
+  log_file: server.log
