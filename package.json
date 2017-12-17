@@ -1,12 +1,12 @@
 {
-  "name": "vesta-wordpress-installer",
+  "name": "wp-director",
   "version": "0.0.1",
   "description": "Installs and restores Wordpress sites on a Vesta managed server",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Jose Nunez (Web Chemistry)",
+  "author": "Jose Nunez",
   "license": "GPL-3.0",
   "dependencies": {
     "child-process-promise": "^2.2.1",
