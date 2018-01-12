@@ -1,6 +1,7 @@
 const { Installer } = require('./operators/installer.js');
 const { VestaAPI } = require('./api/vesta_api');
 const settings = require('./modules/settings');
+const { db }= require('./modules/database');
 
 function runInstaller(operation,cfg){
 	let run_op;

@@ -8,8 +8,9 @@ const { run_server } = require('./server');
 
 
 function initApp(app_args,app_settings){
-
-	init_log(true,true);
+	let log_file=true
+	let log_console=true
+	init_log({log_file,log_console})
 
 	let dbconnection = app_settings.dbconnection;
 	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;

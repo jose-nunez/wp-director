@@ -11,9 +11,9 @@ function console_log(...args){
 	console.log(...args);
 }
 
-let init_log = exports.init_log = (log_file,log_console)=>{
-	log_file = logs.push(file_log);
-	log_console = logs.push(console_log);
+let init_log = exports.init_log = ({log_file,log_console})=>{
+	if(log_file) logs.push(file_log);
+	if(log_console) logs.push(console_log);
 }
 
 let attach_process_log_function = exports. attach_process_log_function = (fn)=>{
