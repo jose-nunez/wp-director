@@ -8,8 +8,12 @@ class WP_API extends SystemAPI{
 		this.path = path;
 	}
 
-	download(){
-		return this.sys_call_user('wp core download',`--path='${this.path}'`);
+	download(locale,version){
+		return this.sys_call_user('wp core download',
+			`--path='${this.path}'`,
+			locale? `--locale='${locale}'`:'',
+			version? `--version='${version}'`:'',
+			);
 	}
 
 	config(db_name,db_user,db_pass){ 

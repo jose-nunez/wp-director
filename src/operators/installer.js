@@ -154,9 +154,9 @@ class Installer{
 	* WORDPRESS INSTALL 
 	******************************************/
 
-	download_wp(){ 
+	download_wp(cfg){ 
 		process_log(`Downloading Wordpress`);
-		return this.wp_api.download()
+		return this.wp_api.download(cfg.wordpress.locale,cfg.wordpress.version)
 		.then((result)=>process_log(result.stdout));
 	}
 
@@ -402,7 +402,7 @@ class Installer{
 
 	full_site_wp_install(cfg){
 		return this.full_site_init(cfg)
-			.then(()=>this.download_wp())
+			.then(()=>this.download_wp(cfg))
 			.then(()=>this.config_wp(cfg))
 			.then(()=>this.install_wp(cfg))
 			.then(()=>Promise.all([
