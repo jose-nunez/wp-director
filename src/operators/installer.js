@@ -185,7 +185,7 @@ class Installer{
 		return this.checkValues(cfg,['cfg.local.domain','cfg.wordpress.title','cfg.wordpress.admin'/*,'cfg.wordpress.password'*/,'cfg.wordpress.email','cfg.wordpress.skip_email'],`Can't install wordpress: Wrong parameters!`).then(()=>{
 			process_log(`Installing Wordpress: ${cfg.wordpress.title}`);
 			return this.wp_api.install(
-				cfg.local.domain,
+				(cfg.local.protocol? cfg.local.protocol+'://':'') + cfg.local.domain,
 				cfg.wordpress.title,
 				cfg.wordpress.admin,
 				cfg.wordpress.password,
