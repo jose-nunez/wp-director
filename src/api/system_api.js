@@ -21,7 +21,7 @@ class SystemAPI{
 	sys_call_user(...args){
 		// let cmd = shellescape(args);
 		let cmd = args.join(" ");
-		return exec(cmd,this.v_user_guid);
+		return exec(cmd,this.v_user_guid).catch(e=>{throw new Error(e.stderr)});
 	}
 	sys_call(...args){
 		// let cmd = shellescape(args);

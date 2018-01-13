@@ -196,34 +196,24 @@ class Installer{
 		});
 	}
 
+	iterate_installs(elems,install_fn,name_plural){
+		process_log(`Installing ${name_plural}`);
+		return Promise.all(elems.map(elem=>
+			this.wp_api[install_fn](elem[0],elem[1])
+			.then(r=>{process_log(`Installing ${elem[0]}`);return r})
+			.then(r=>process_log(r.stdout))
+			.catch(e=>{process_log(`Installing ${elem[0]}`);process_log(e.message)})
+		)).then(r=>process_log(`${name_plural} installation finished`))
+	}
+
 	install_wp_themes(cfg){ 
-		process_log(`Installing Themes`);
-		if(cfg && cfg.wordpress && cfg.wordpress.themes && cfg.wordpress.themes instanceof Array){
-			return Promise.all(cfg.wordpress.themes.map(theme=>(
-				this.wp_api.install_theme(theme[0],theme[1])
-				.then(r=>process_log(r.stdout))
-			)))
-			.then(r=>process_log('All themes installed'));
-		}
-		else {
-			process_log('No themes to install');
-			return Promise.resolve();
-		}
+		if(cfg && cfg.wordpress && cfg.wordpress.themes && cfg.wordpress.themes instanceof Array) return this.iterate_installs(cfg.wordpress.themes,'install_theme','Themes')
+		else return Promise.resolve(process_log('No themes to install'))
 	}
 
 	install_wp_plugins(cfg){ 
-		process_log(`Installing Plugins`);
-		if(cfg && cfg.wordpress && cfg.wordpress.plugins && cfg.wordpress.plugins instanceof Array){
-			return Promise.all(cfg.wordpress.plugins.map(plugin=>(
-				this.wp_api.install_plugin(plugin[0],plugin[1])
-				.then(r=>process_log(r.stdout))
-			)))
-			.then(r=>process_log('All plugins installed'));
-		}
-		else{ 
-			process_log('No plugins to install');
-			return Promise.resolve();
-		}
+		if(cfg && cfg.wordpress && cfg.wordpress.plugins && cfg.wordpress.plugins instanceof Array) return this.iterate_installs(cfg.wordpress.plugins,'install_plugin','Plugins')
+		else return Promise.resolve(process_log('No plugins to install'))
 	}
 	
 	/******************************************
@@ -405,10 +395,12 @@ class Installer{
 			.then(()=>this.download_wp(cfg))
 			.then(()=>this.config_wp(cfg))
 			.then(()=>this.install_wp(cfg))
-			.then(()=>Promise.all([
+			/*.then(()=>Promise.all([
 				this.install_wp_themes(cfg),
 				this.install_wp_plugins(cfg)
-			]))
+			]))*/
+			.then(()=>this.install_wp_themes(cfg))
+			.then(()=>this.install_wp_plugins(cfg))
 		;
 	}
 
