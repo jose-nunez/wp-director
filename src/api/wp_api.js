@@ -41,6 +41,17 @@ class WP_API extends SystemAPI{
 	install_theme(theme,activate){ return this.sys_call_user('wp theme install',`--path='${this.path}'`,`${theme}`,activate?`--activate`:'');}
 	install_plugin(plugin,activate){ return this.sys_call_user('wp plugin install',`--path='${this.path}'`,`${plugin}`,activate?`--activate`:'');}
 
+	find_replace(find,replace){
+		return this.sys_call_user('wp search-replace',
+			// `${find}`,
+			// `${replace}`,
+			find,
+			replace,
+			`--all-tables`,
+			`--path='${this.path}'`,
+		);
+	}
+
 	migratedb_find_replace(find,replace){
 		return this.sys_call_user('wp migratedb find-replace',
 			`--path='${this.path}'`,

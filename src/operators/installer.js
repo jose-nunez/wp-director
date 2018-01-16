@@ -294,12 +294,35 @@ class Installer{
 			.then(()=>process_log('Replaced path name in database')); 
 	}
 
+	wp_replace_domain(cfg){ 
+		process_log('Replacing domain name in database (WP)');
+		return this.wp_api.find_replace(rWTrim(cfg.remote.domain).replace(/https{0,1}:\/\//,''),rWTrim(cfg.local.domain).replace(/https{0,1}:\/\//,''))
+			.then(()=>process_log('Replaced domain name in database')); 
+	}
+	wp_replace_path(cfg){ 
+		process_log(`Replacing path name in database (WP)`);
+		return this.wp_api.find_replace(
+				rPTrim(cfg.remote.path),
+				rPTrim(cfg.local.path)
+			)
+			.then(()=>process_log('Replaced path name in database')); 
+	}
+
 	install_migratedb_database(cfg){
 		process_log(`Running script ${cfg.remote.backup_database}`);
 		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
 		.then(()=>	process_log(`Script ${cfg.remote.backup_database} executed`))
 		.then(()=>	this.migratedb_replace_domain(cfg))
 		.then(()=>	this.migratedb_replace_path(cfg))
+		;
+	}
+
+	install_database(cfg){
+		process_log(`Running script ${cfg.remote.backup_database}`);
+		return 		this.database_api.run_script(path.join(cfg.local.backup_dir,path.basename(cfg.remote.backup_database)))
+		.then(()=>	process_log(`Script ${cfg.remote.backup_database} executed`))
+		.then(()=>	this.wp_replace_domain(cfg))
+		.then(()=>	this.wp_replace_path(cfg))
 		;
 	}
 
@@ -435,7 +458,8 @@ class Installer{
 			return 		the_promise
 			.then(()=>	this.unzip_migratedb_files(cfg,{multipart_support:false}))
 			.then(()=>	this.config_wp_manually(cfg))
-			.then(()=>	this.install_migratedb_database(cfg));
+			// .then(()=>	this.install_migratedb_database(cfg));
+			.then(()=>	this.install_database(cfg));
 		}
 	}
 	
