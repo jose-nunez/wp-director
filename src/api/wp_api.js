@@ -8,6 +8,12 @@ class WP_API extends SystemAPI{
 		this.path = path;
 	}
 
+
+	/*wpu(...args){
+		args.unshift(`--path='${this.path}'`);
+		this.sys_call_user.call(this,args);
+	}*/
+
 	download(locale,version){
 		return this.sys_call_user('wp core download',
 			`--path='${this.path}'`,
@@ -41,6 +47,14 @@ class WP_API extends SystemAPI{
 	install_theme(theme,activate){ return this.sys_call_user('wp theme install',`--path='${this.path}'`,`${theme}`,activate?`--activate`:'');}
 	install_plugin(plugin,activate){ return this.sys_call_user('wp plugin install',`--path='${this.path}'`,`${plugin}`,activate?`--activate`:'');}
 
+	migratedb_find_replace(find,replace){
+		return this.sys_call_user('wp migratedb find-replace',
+			`--path='${this.path}'`,
+			`--find="${find}"`,
+			`--replace="${replace}"`
+		);
+	}
+
 	find_replace(find,replace){
 		return this.sys_call_user('wp search-replace',
 			// `${find}`,
@@ -52,12 +66,43 @@ class WP_API extends SystemAPI{
 		);
 	}
 
-	migratedb_find_replace(find,replace){
-		return this.sys_call_user('wp migratedb find-replace',
-			`--path='${this.path}'`,
-			`--find="${find}"`,
-			`--replace="${replace}"`
-		);
+	update_option(key/*DOT NOTATION!*/,value){
+
+		/*	
+			wp option get et_divi --format=json --allow-root | php -r "\$option=json_decode(fgets(STDIN));\$option->et_pb_product_tour_global = \"false\";print json_encode(\$option);" | wp option set et_divi --format=json --allow-root
+			wp option get et_divi --format=json --allow-root | php -r "\$option=json_decode(fgets(STDIN));\$option->et_pb_product_tour_global = \"on\";print json_encode(\$option);" | wp option set et_divi --format=json --allow-root
+			
+			wp option get et_divi --format=json --allow-root | php -r "\$option=json_decode(fgets(STDIN));\$option->divi_fixed_nav = \"false\";print json_encode(\$option);" | wp option set et_divi --format=json --allow-root
+			wp option get et_divi --format=json --allow-root | php -r "\$option=json_decode(fgets(STDIN));\$option->divi_fixed_nav = \"on\";print json_encode(\$option);" | wp option set et_divi --format=json --allow-root
+
+
+
+
+
+			const { WP_API } = require('./api/wp_api');
+			wp_api.update_option('et_divi','et_pb_product_tour_global')
+			let wp_api = new WP_API('jose','/home/jose/web/jose-2.webchemistry.studio/public_html/');
+		*/
+
+		let split_key = key.split('.');
+		if(split_key.length==1){
+			return this.sys_call_user('wp option update', 
+				`--path='${this.path}'`,
+				split_key,
+				value,
+			)
+		}
+		/*if(opt_key){
+			return this.sys_call_user(
+				`wp option get ${opt_name} --format=json`,`--path='${this.path}'`,
+				`| php -r "$option=json_decode(fgets(STDIN));$option->${opt_key} = "false";print json_encode($option);"`,
+				`| wp option set ${opt_name} --format=json`,`--path='${this.path}'`,
+			);
+		}
+		else{
+			
+		}*/
+
 	}
 }
 

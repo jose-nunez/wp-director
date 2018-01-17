@@ -215,6 +215,18 @@ class Installer{
 		if(cfg && cfg.wordpress && cfg.wordpress.plugins && cfg.wordpress.plugins instanceof Array) return this.iterate_installs(cfg.wordpress.plugins,'install_plugin','Plugins')
 		else return Promise.resolve(process_log('No plugins to install'))
 	}
+
+	update_wp_options(cfg){
+		process_log(`Updating options`);
+		if(cfg && cfg.wordpress && cfg.wordpress.options){
+			return Promise.all(Object.keys(cfg.wordpress.options).map(opt=>
+				this.wp_api.update_option(opt,cfg.wordpress.options[opt])
+				.then(r=>process_log(r.stdout))
+			))
+			.then(r=>process_log('All options updated'));
+			
+		}
+	}
 	
 	/******************************************
 	* RESTORE DUPLICATOR BACKUP
@@ -418,12 +430,9 @@ class Installer{
 			.then(()=>this.download_wp(cfg))
 			.then(()=>this.config_wp(cfg))
 			.then(()=>this.install_wp(cfg))
-			/*.then(()=>Promise.all([
-				this.install_wp_themes(cfg),
-				this.install_wp_plugins(cfg)
-			]))*/
 			.then(()=>this.install_wp_themes(cfg))
 			.then(()=>this.install_wp_plugins(cfg))
+			.then(()=>this.update_wp_options(cfg))
 		;
 	}
 

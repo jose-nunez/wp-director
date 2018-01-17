@@ -11,9 +11,11 @@ function runInstaller(operation,cfg){
 		case 'install-wordpress': run_op='full_site_wp_install';break;
 		case 'install-themes': run_op='install_wp_themes';break;
 		case 'install-plugins': run_op='install_wp_plugins';break;
+		case 'update-options': run_op='update_wp_options';break;
 		
 		case 'restore': run_op='full_site_backup_restore';break;
 		case 'download-backups': run_op='download_backup_files';break;
+		
 
 		default: throw new Error('Wrong operation');
 	}
