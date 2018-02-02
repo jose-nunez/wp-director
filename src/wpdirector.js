@@ -16,7 +16,8 @@ function initApp(app_args,app_settings){
 	if(app_args.db_pass) dbconnection.db_pass = app_args.db_pass;
 	if(app_args.db_name) dbconnection.db_name = app_args.db_name;
 	if(app_args.db_user) dbconnection.db_user = app_args.db_user;	
-	db.connect(dbconnection);
+	if(dbconnection.db_pass && dbconnection.db_name && dbconnection.db_user) db.connect(dbconnection)
+	else server_log('NOTICE: No database credentials provided')
 }
 
 (function(){

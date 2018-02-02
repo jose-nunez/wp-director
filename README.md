@@ -8,11 +8,13 @@ I'm hanging this project here in case someone is interested in joining it or giv
 The application currently works under several specific environmental settings.
 * Linux
 * Node JS & NPM
-* Vesta CP. API globally installed
+* VestaCP API globally installed
 * Wordpress CLI globally installed
 * The application must be executed by admin user
 * Mongo BD (optional)
+
 This and few others more are basically the settings on our development server.
+
 ### How to use
 The application can be called once specifying the operation to be performed, by using the setting files or run several operations separately on the app CLI.
 First, you need to set the configuration files properly. YOU DON'T WANT TO DELETE ANY OF YOUR SITES BY ACCIDENT.
